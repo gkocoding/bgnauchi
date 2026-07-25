@@ -132,3 +132,9 @@ CORS_ALLOWED_ORIGINS = [
     "https://bgnauchi.me",
     "https://www.bgnauchi.me",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://bgnauchi-backend-dsdgdhckb2gkhefp.germanywestcentral-01.azurewebsites.net",
+    "https://bgnauchi.me",
+    "https://www.bgnauchi.me",
+]
