@@ -20,7 +20,7 @@ type Exam = {
 };
 
 const gradeMeta: Record<string, { emoji: string; color: string; label: string }> = {
-    "5": { emoji: "🌱", color: "#5AC8D8", label: "начален етап" },
+    "4": { emoji: "🌱", color: "#5AC8D8", label: "начален етап" },
     "7": { emoji: "📘", color: "#FFC857", label: "прогимназия" },
     "10": { emoji: "🎯", color: "#FF6B4A", label: "гимназия" },
     "12": { emoji: "🎓", color: "#8B7FD8", label: "матура" },

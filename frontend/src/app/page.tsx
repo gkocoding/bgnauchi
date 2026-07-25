@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 const grades = [
-  { num: 5, label: "начален етап", emoji: "🌱", color: "#5AC8D8" },
+  { num: 4, label: "начален етап", emoji: "🌱", color: "#5AC8D8" },
   { num: 7, label: "прогимназия", emoji: "📘", color: "#FFC857" },
   { num: 10, label: "гимназия", emoji: "🎯", color: "#FF6B4A" },
   { num: 12, label: "матура", emoji: "🎓", color: "#8B7FD8" },
