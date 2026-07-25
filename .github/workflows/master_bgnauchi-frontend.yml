@@ -24,7 +24,11 @@ jobs:
           npm run build
       - name: Zip artifact for deployment
         working-directory: ./frontend
-        run: zip -r ../release.zip . -x "*.git*"
+        run: |
+          zip -r ../release.zip . \
+            -x "*.git*" \
+            -x "node_modules/*" \
+            -x ".next/cache/*"
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -41,14 +45,11 @@ jobs:
         with:
           name: node-app
 
-      - name: Unzip artifact
-        run: unzip release.zip -d release
-
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bgnauchi-frontend'
           slot-name: 'Production'
-          package: ./release
+          package: release.zip
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F6B2144ADFCC4BDEA5B007431571352B }}
