@@ -17,6 +17,8 @@ jobs:
           node-version: '24.x'
       - name: npm install and build
         working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
           npm install
           npm run build
