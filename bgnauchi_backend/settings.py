@@ -129,4 +129,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://bgnauchi-frontend-h4f8ccc7che3btf0.germanywestcentral-01.azurewebsites.net",
+    "https://bgnauchi.me",
+    "https://www.bgnauchi.me",
 ]
