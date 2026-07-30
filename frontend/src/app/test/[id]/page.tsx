@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import "katex/dist/katex.min.css";
+import { InlineMath } from "react-katex";
 
 type Question = {
     id: number;
     text: string;
+    image: string | null;
     option_a: string;
     option_b: string;
     option_c: string;
@@ -26,6 +29,22 @@ type CheckResult = {
     total: number;
     correct_answers: Record<string, string>;
 };
+
+// Разбива текст като "Колко е \sqrt{16}?" на части с формули,
+// търсейки \команда{...} нотация без нужда от $ разделители.
+function renderTextWithMath(text: string) {
+    const parts = text.split(/(\\[a-zA-Z]+\{[^}]*\}(?:\{[^}]*\})?)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith("\\")) {
+            try {
+                return <InlineMath key={i} math={part} />;
+            } catch {
+                return <span key={i}>{part}</span>;
+            }
+        }
+        return <span key={i}>{part}</span>;
+    });
+}
 
 export default function TestPage() {
     const params = useParams();
@@ -122,8 +141,17 @@ export default function TestPage() {
                         return (
                             <div key={q.id} className="bg-[#2A2A38] rounded-3xl p-6 shadow-md">
                                 <p className="font-display font-bold text-lg mb-4">
-                                    {index + 1}. {q.text}
+                                    {index + 1}. {renderTextWithMath(q.text)}
                                 </p>
+                                {q.image && (
+                                    <div className="mb-4 flex justify-center">
+                                        <img
+                                            src={q.image}
+                                            alt={`Фигура към въпрос ${index + 1}`}
+                                            className="max-w-full max-h-80 rounded-xl bg-[#F5F0E8] p-4"
+                                        />
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {options.map(([key, label]) => {
                                         let style = "border-2 border-transparent bg-[#20202B] hover:border-[#5AC8D8]";
@@ -146,7 +174,7 @@ export default function TestPage() {
                                                 className={`${style} rounded-2xl px-4 py-3 text-left transition-all duration-200`}
                                             >
                                                 <span className="font-semibold uppercase mr-2">{key})</span>
-                                                {label}
+                                                {renderTextWithMath(label)}
                                             </button>
                                         );
                                     })}

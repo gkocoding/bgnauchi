@@ -9,8 +9,7 @@ class SubjectSerializer(serializers.ModelSerializer):
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['id', 'text', 'option_a', 'option_b', 'option_c', 'option_d']
-        # забележи: НЕ включваме 'correct_option' тук - не искаме ученикът да го вижда в браузъра!
+        fields = ['id', 'text', 'image', 'option_a', 'option_b', 'option_c', 'option_d']
 
 class ExamSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
