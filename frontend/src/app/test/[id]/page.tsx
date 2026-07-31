@@ -30,20 +30,69 @@ type CheckResult = {
     correct_answers: Record<string, string>;
 };
 
-// Разбива текст като "Колко е \sqrt{16}?" на части с формули,
-// търсейки \команда{...} нотация без нужда от $ разделители.
+// Разбива текст като "Колко е \sqrt{16}?" на части с формули.
+// Поддържа ВЛОЖЕНИ скоби (напр. \frac{5\sqrt{5}}{\sqrt{5}}) като брои
+// дълбочината на { } вместо да разчита на прост regex.
 function renderTextWithMath(text: string) {
-    const parts = text.split(/(\\[a-zA-Z]+\{[^}]*\}(?:\{[^}]*\})?)/g);
-    return parts.map((part, i) => {
-        if (part.startsWith("\\")) {
-            try {
-                return <InlineMath key={i} math={part} />;
-            } catch {
-                return <span key={i}>{part}</span>;
+    const nodes: React.ReactNode[] = [];
+    let i = 0;
+    let buffer = "";
+    let key = 0;
+
+    function flushBuffer() {
+        if (buffer) {
+            nodes.push(<span key={key++}>{buffer}</span>);
+            buffer = "";
+        }
+    }
+
+    // Чете балансиран {...} блок, започвайки от индекс start, който сочи към "{".
+    function readBraceGroup(str: string, start: number): [string, number] {
+        let depth = 0;
+        let j = start;
+        for (; j < str.length; j++) {
+            if (str[j] === "{") depth++;
+            else if (str[j] === "}") {
+                depth--;
+                if (depth === 0) {
+                    return [str.slice(start, j + 1), j + 1];
+                }
             }
         }
-        return <span key={i}>{part}</span>;
-    });
+        return [str.slice(start), str.length];
+    }
+
+    while (i < text.length) {
+        if (text[i] === "\\" && /[a-zA-Z]/.test(text[i + 1] || "")) {
+            let j = i + 1;
+            while (j < text.length && /[a-zA-Z]/.test(text[j])) j++;
+            let mathExpr = text.slice(i, j);
+
+            // До 2 последователни {...} групи (за \frac{a}{b}), с поддръжка на вложеност
+            let groupsRead = 0;
+            while (groupsRead < 2 && text[j] === "{") {
+                const [group, nextIndex] = readBraceGroup(text, j);
+                mathExpr += group;
+                j = nextIndex;
+                groupsRead++;
+            }
+
+            if (groupsRead > 0) {
+                flushBuffer();
+                try {
+                    nodes.push(<InlineMath key={key++} math={mathExpr} />);
+                } catch {
+                    nodes.push(<span key={key++}>{mathExpr}</span>);
+                }
+                i = j;
+                continue;
+            }
+        }
+        buffer += text[i];
+        i++;
+    }
+    flushBuffer();
+    return nodes;
 }
 
 export default function TestPage() {
