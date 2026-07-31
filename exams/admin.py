@@ -21,7 +21,15 @@ class QuestionAdmin(admin.ModelAdmin):
     form = QuestionAdminForm
 
 
+class StudentAttemptAdmin(admin.ModelAdmin):
+    list_display = ("user", "exam", "score", "total_questions", "completed_at")
+    list_filter = ("exam", "exam__grade", "completed_at")
+    search_fields = ("user__username", "exam__title")
+    readonly_fields = ("completed_at",)
+    ordering = ("-completed_at",)
+
+
 admin.site.register(Subject)
 admin.site.register(Exam)
 admin.site.register(Question, QuestionAdmin)
-admin.site.register(StudentAttempt)
+admin.site.register(StudentAttempt, StudentAttemptAdmin)
