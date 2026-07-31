@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import "katex/dist/katex.min.css";
 import { InlineMath } from "react-katex";
+import { apiFetch } from "@/lib/api";
 
 type Question = {
     id: number;
@@ -30,9 +31,6 @@ type CheckResult = {
     correct_answers: Record<string, string>;
 };
 
-// Разбива текст като "Колко е \sqrt{16}?" на части с формули.
-// Поддържа ВЛОЖЕНИ скоби (напр. \frac{5\sqrt{5}}{\sqrt{5}}) като брои
-// дълбочината на { } вместо да разчита на прост regex.
 function renderTextWithMath(text: string) {
     const nodes: React.ReactNode[] = [];
     let i = 0;
@@ -46,7 +44,6 @@ function renderTextWithMath(text: string) {
         }
     }
 
-    // Чете балансиран {...} блок, започвайки от индекс start, който сочи към "{".
     function readBraceGroup(str: string, start: number): [string, number] {
         let depth = 0;
         let j = start;
@@ -68,7 +65,6 @@ function renderTextWithMath(text: string) {
             while (j < text.length && /[a-zA-Z]/.test(text[j])) j++;
             let mathExpr = text.slice(i, j);
 
-            // До 2 последователни {...} групи (за \frac{a}{b}), с поддръжка на вложеност
             let groupsRead = 0;
             while (groupsRead < 2 && text[j] === "{") {
                 const [group, nextIndex] = readBraceGroup(text, j);
@@ -104,6 +100,8 @@ export default function TestPage() {
     const [result, setResult] = useState<CheckResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [furthest, setFurthest] = useState(0);
 
     useEffect(() => {
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/${examId}/`)
@@ -114,16 +112,10 @@ export default function TestPage() {
             });
     }, [examId]);
 
-    function selectAnswer(questionId: number, option: string) {
-        if (result) return;
-        setAnswers((prev) => ({ ...prev, [String(questionId)]: option }));
-    }
-
     async function submitAnswers() {
         setSubmitting(true);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/${examId}/check/`, {
+        const res = await apiFetch(`/api/exams/${examId}/check/`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ answers }),
         });
         const data: CheckResult = await res.json();
@@ -131,117 +123,251 @@ export default function TestPage() {
         setSubmitting(false);
     }
 
+    function selectAnswer(questionId: number, option: string) {
+        setAnswers((prev) => ({ ...prev, [String(questionId)]: option }));
+
+        // Автоматично напред само ако сме на "фронтовия" (най-новия) въпрос
+        if (!exam) return;
+        const isLast = currentIndex === exam.questions.length - 1;
+        if (currentIndex === furthest && !isLast) {
+            setTimeout(() => {
+                setCurrentIndex((i) => i + 1);
+                setFurthest((f) => f + 1);
+            }, 400);
+        }
+    }
+
+    function goBack() {
+        setCurrentIndex((i) => Math.max(0, i - 1));
+    }
+
+    function goNext() {
+        if (!exam) return;
+        setCurrentIndex((i) => Math.min(exam.questions.length - 1, i + 1));
+    }
+
     if (loading) {
         return (
-            <div className="bg-[#20202B] text-[#FFF8F0] min-h-screen flex items-center justify-center">
-                <p className="font-display text-xl">Зареждане...</p>
+            <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen flex items-center justify-center">
+                <p className="font-display text-sm text-[#9CA3C4]">Зареждане...</p>
             </div>
         );
     }
 
     if (!exam) {
         return (
-            <div className="bg-[#20202B] text-[#FFF8F0] min-h-screen flex items-center justify-center">
-                <p className="font-display text-xl">Тестът не е намерен.</p>
+            <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen flex items-center justify-center">
+                <p className="font-display text-sm text-[#9CA3C4]">Тестът не е намерен.</p>
             </div>
         );
     }
 
-    const allAnswered = exam.questions.every((q) => answers[String(q.id)]);
+    // --- SUMMARY ЕКРАН ---
+    if (result) {
+        const wrongQuestions = exam.questions.filter(
+            (q) => answers[String(q.id)] !== result.correct_answers[String(q.id)]
+        );
+        const pct = Math.round((result.score / result.total) * 100);
+
+        return (
+            <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen relative overflow-hidden">
+                <div className="starfield" />
+                <div className="absolute top-1/4 -left-40 w-96 h-96 rounded-full bg-[#4FD1C5] opacity-[0.07] blur-[100px]" />
+                <div className="absolute bottom-1/4 -right-40 w-96 h-96 rounded-full bg-[#A78BFA] opacity-[0.08] blur-[100px]" />
+
+                <nav className="relative z-10 max-w-3xl mx-auto px-6 py-6">
+                    <Link href="/" className="font-display text-xl font-bold tracking-wide">
+                        bg<span className="text-[#4FD1C5]">научи</span>
+                    </Link>
+                </nav>
+
+                <section className="relative z-10 max-w-3xl mx-auto px-6 pt-6 pb-20">
+                    <div className="bg-[#141833] border border-white/10 rounded-3xl p-8 text-center mb-8">
+                        <div className="text-5xl mb-3">
+                            {pct === 100 ? "🎉" : pct >= 50 ? "👍" : "💪"}
+                        </div>
+                        <div className="font-mono text-4xl font-bold mb-1">
+                            {result.score} / {result.total}
+                        </div>
+                        <p className="text-[#9CA3C4] text-sm">{pct}% верни отговори</p>
+                    </div>
+
+                    {wrongQuestions.length === 0 ? (
+                        <div className="bg-[#141833] border border-white/10 rounded-3xl p-6 text-center text-[#9CA3C4] text-sm">
+                            Всички отговори са верни — перфектна орбита! ✦
+                        </div>
+                    ) : (
+                        <>
+                            <h2 className="font-display text-sm font-bold text-[#9CA3C4] uppercase tracking-wider mb-4">
+                                Въпроси за преговор ({wrongQuestions.length})
+                            </h2>
+                            <div className="space-y-4">
+                                {wrongQuestions.map((q) => {
+                                    const options: [string, string][] = [
+                                        ["a", q.option_a],
+                                        ["b", q.option_b],
+                                        ["c", q.option_c],
+                                        ["d", q.option_d],
+                                    ];
+                                    const yourAnswer = answers[String(q.id)];
+                                    const correct = result.correct_answers[String(q.id)];
+
+                                    return (
+                                        <div key={q.id} className="bg-[#141833] border border-white/10 rounded-3xl p-6">
+                                            <p className="font-display font-bold mb-4">
+                                                {renderTextWithMath(q.text)}
+                                            </p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                {options.map(([key, label]) => {
+                                                    let style = "border border-white/10 bg-[#0B0E1A]";
+                                                    if (key === correct) {
+                                                        style = "border border-[#4ADE80]/60 bg-[#4ADE80]/10";
+                                                    } else if (key === yourAnswer) {
+                                                        style = "border border-[#F87171]/60 bg-[#F87171]/10";
+                                                    }
+                                                    return (
+                                                        <div key={key} className={`${style} rounded-2xl px-4 py-2.5 text-sm`}>
+                                                            <span className="font-semibold uppercase mr-2 font-mono">{key})</span>
+                                                            {renderTextWithMath(label)}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-xs text-[#9CA3C4] mt-3">
+                                                Твоят отговор: <span className="text-[#F87171] font-semibold uppercase">{yourAnswer || "—"}</span>
+                                                {" · "}
+                                                Верен: <span className="text-[#4ADE80] font-semibold uppercase">{correct}</span>
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+
+                    <Link
+                        href="/"
+                        className="mt-10 inline-block font-display font-bold text-sm bg-[#F2C14E] text-[#0B0E1A] px-6 py-3 rounded-full hover:scale-105 transition-transform duration-300"
+                    >
+                        Обратно към началото →
+                    </Link>
+                </section>
+            </div>
+        );
+    }
+
+    // --- ВЪПРОС (с навигация назад/напред) ---
+    const q = exam.questions[currentIndex];
+    const options: [string, string][] = [
+        ["a", q.option_a],
+        ["b", q.option_b],
+        ["c", q.option_c],
+        ["d", q.option_d],
+    ];
+    const isLast = currentIndex === exam.questions.length - 1;
+    const selected = answers[String(q.id)];
+    const allAnswered = exam.questions.every((qq) => answers[String(qq.id)]);
 
     return (
-        <div className="bg-[#20202B] text-[#FFF8F0] min-h-screen relative overflow-hidden">
-            <div className="floaty absolute top-20 left-10 w-32 h-32 rounded-full bg-[#FFC857] opacity-20 blur-2xl"></div>
-            <div className="floaty absolute bottom-40 right-1/4 w-40 h-40 rounded-full bg-[#5AC8D8] opacity-20 blur-2xl" style={{ animationDelay: "2s" }}></div>
+        <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen relative overflow-hidden">
+            <div className="starfield" />
+            <div className="absolute top-1/4 -left-40 w-96 h-96 rounded-full bg-[#4FD1C5] opacity-[0.07] blur-[100px]" />
+            <div className="absolute bottom-1/4 -right-40 w-96 h-96 rounded-full bg-[#A78BFA] opacity-[0.08] blur-[100px]" />
 
-            <nav className="relative z-10 max-w-3xl mx-auto px-6 py-6 flex items-center justify-between">
-                <Link href="/" className="font-display text-2xl font-bold">
-                    bg<span className="text-[#FF6B4A]">научи</span> 🎈
+            <nav className="relative z-10 max-w-3xl mx-auto px-6 py-6">
+                <Link href="/" className="font-display text-xl font-bold tracking-wide">
+                    bg<span className="text-[#4FD1C5]">научи</span>
                 </Link>
             </nav>
 
-            <section className="relative z-10 max-w-3xl mx-auto px-6 pt-6 pb-16">
-                <h1 className="font-display text-3xl md:text-4xl font-extrabold mb-2">{exam.title}</h1>
-                <p className="text-[#B8B4AC] mb-10">{exam.grade}. клас · {exam.questions.length} въпроса</p>
+            <section className="relative z-10 max-w-2xl mx-auto px-6 pt-4 pb-16">
+                <p className="text-[#9CA3C4] text-sm mb-3">{exam.title} · {exam.grade}. клас</p>
 
-                {result && (
-                    <div className="bg-[#2A2A38] rounded-3xl p-8 text-center mb-10 shadow-md">
-                        <div className="text-5xl mb-3">
-                            {result.score === result.total ? "🎉" : result.score >= result.total / 2 ? "👍" : "💪"}
-                        </div>
-                        <div className="font-display text-3xl font-extrabold mb-1">
-                            {result.score} / {result.total}
-                        </div>
-                        <p className="text-[#B8B4AC]">верни отговора</p>
-                    </div>
-                )}
-
-                <div className="space-y-6">
-                    {exam.questions.map((q, index) => {
-                        const options: [string, string][] = [
-                            ["a", q.option_a],
-                            ["b", q.option_b],
-                            ["c", q.option_c],
-                            ["d", q.option_d],
-                        ];
-                        const selected = answers[String(q.id)];
-                        const correct = result?.correct_answers[String(q.id)];
-
+                {/* Прогрес — клик за директен скок до посетен въпрос */}
+                <div className="flex items-center gap-2 mb-8">
+                    {exam.questions.map((qq, i) => {
+                        const visited = i <= furthest;
                         return (
-                            <div key={q.id} className="bg-[#2A2A38] rounded-3xl p-6 shadow-md">
-                                <p className="font-display font-bold text-lg mb-4">
-                                    {index + 1}. {renderTextWithMath(q.text)}
-                                </p>
-                                {q.image && (
-                                    <div className="mb-4 flex justify-center">
-                                        <img
-                                            src={q.image}
-                                            alt={`Фигура към въпрос ${index + 1}`}
-                                            className="max-w-full max-h-80 rounded-xl bg-[#F5F0E8] p-4"
-                                        />
-                                    </div>
-                                )}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {options.map(([key, label]) => {
-                                        let style = "border-2 border-transparent bg-[#20202B] hover:border-[#5AC8D8]";
-
-                                        if (result && correct) {
-                                            if (key === correct) {
-                                                style = "border-2 border-[#4CAF50] bg-[#20202B]";
-                                            } else if (key === selected && key !== correct) {
-                                                style = "border-2 border-[#E05A4A] bg-[#20202B]";
-                                            }
-                                        } else if (selected === key) {
-                                            style = "border-2 border-[#FF6B4A] bg-[#20202B]";
-                                        }
-
-                                        return (
-                                            <button
-                                                key={key}
-                                                onClick={() => selectAnswer(q.id, key)}
-                                                disabled={!!result}
-                                                className={`${style} rounded-2xl px-4 py-3 text-left transition-all duration-200`}
-                                            >
-                                                <span className="font-semibold uppercase mr-2">{key})</span>
-                                                {renderTextWithMath(label)}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            <button
+                                key={qq.id}
+                                onClick={() => visited && setCurrentIndex(i)}
+                                disabled={!visited}
+                                className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                                    i === currentIndex
+                                        ? "bg-[#F2C14E]"
+                                        : answers[String(qq.id)]
+                                        ? "bg-[#4FD1C5]"
+                                        : "bg-white/10"
+                                } ${visited ? "cursor-pointer" : "cursor-default"}`}
+                            />
                         );
                     })}
                 </div>
+                <p className="font-mono text-xs text-[#9CA3C4] mb-6">
+                    Въпрос {currentIndex + 1} от {exam.questions.length}
+                </p>
 
-                {!result && (
+                <div key={q.id} className="bg-[#141833] border border-white/10 rounded-3xl p-6 md:p-8">
+                    <p className="font-display font-bold text-lg mb-6">
+                        {renderTextWithMath(q.text)}
+                    </p>
+                    {q.image && (
+                        <div className="mb-6 flex justify-center">
+                            <img
+                                src={q.image}
+                                alt={`Фигура към въпрос ${currentIndex + 1}`}
+                                className="max-w-full max-h-80 rounded-xl bg-[#EDEFF7] p-4"
+                            />
+                        </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {options.map(([key, label]) => {
+                            let style = "border-2 border-white/10 bg-[#0B0E1A] hover:border-[#4FD1C5]/50";
+                            if (selected === key) {
+                                style = "border-2 border-[#F2C14E] bg-[#F2C14E]/10";
+                            }
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => selectAnswer(q.id, key)}
+                                    className={`${style} rounded-2xl px-4 py-3 text-left transition-all duration-200`}
+                                >
+                                    <span className="font-semibold uppercase mr-2 font-mono">{key})</span>
+                                    {renderTextWithMath(label)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Навигация */}
+                <div className="flex items-center justify-between mt-6">
                     <button
-                        onClick={submitAnswers}
-                        disabled={!allAnswered || submitting}
-                        className="mt-10 w-full font-display font-bold text-lg bg-[#FF6B4A] text-white px-10 py-4 rounded-full shadow-lg hover:scale-[1.02] transition-all duration-300 disabled:opacity-40 disabled:hover:scale-100"
+                        onClick={goBack}
+                        disabled={currentIndex === 0}
+                        className="font-display text-sm font-medium px-5 py-3 rounded-full border border-white/10 hover:border-[#4FD1C5]/50 transition-colors disabled:opacity-30 disabled:hover:border-white/10"
                     >
-                        {submitting ? "Проверяваме..." : "Провери отговорите"}
+                        ← Назад
                     </button>
-                )}
+
+                    {isLast ? (
+                        <button
+                            onClick={submitAnswers}
+                            disabled={!allAnswered || submitting}
+                            className="font-display font-bold text-sm bg-[#F2C14E] text-[#0B0E1A] px-6 py-3 rounded-full hover:scale-105 transition-transform duration-300 disabled:opacity-40 disabled:hover:scale-100"
+                        >
+                            {submitting ? "Проверяваме..." : "Провери резултата"}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={goNext}
+                            disabled={currentIndex > furthest}
+                            className="font-display text-sm font-medium px-5 py-3 rounded-full border border-white/10 hover:border-[#4FD1C5]/50 transition-colors disabled:opacity-30 disabled:hover:border-white/10"
+                        >
+                            Напред →
+                        </button>
+                    )}
+                </div>
             </section>
         </div>
     );
