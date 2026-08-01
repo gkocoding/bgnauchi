@@ -32,7 +32,15 @@ export default function ProfilePage() {
         apiFetch("/api/attempts/")
             .then((res) => res.json())
             .then((data) => {
-                setAttempts(data);
+                // DRF понякога пейджинира отговора като {results: [...]}
+                // вместо чист масив — поддържаме и двата формата.
+                if (Array.isArray(data)) {
+                    setAttempts(data);
+                } else if (Array.isArray(data?.results)) {
+                    setAttempts(data.results);
+                } else {
+                    setAttempts([]);
+                }
                 setLoading(false);
             })
             .catch(() => setLoading(false));
