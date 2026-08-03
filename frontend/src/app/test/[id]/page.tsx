@@ -65,6 +65,7 @@ function renderTextWithMath(text: string) {
             while (j < text.length && /[a-zA-Z]/.test(text[j])) j++;
             let mathExpr = text.slice(i, j);
 
+            // До 2 последователни {...} групи (за \frac{a}{b}), с поддръжка на вложеност
             let groupsRead = 0;
             while (groupsRead < 2 && text[j] === "{") {
                 const [group, nextIndex] = readBraceGroup(text, j);
@@ -73,16 +74,16 @@ function renderTextWithMath(text: string) {
                 groupsRead++;
             }
 
-            if (groupsRead > 0) {
-                flushBuffer();
-                try {
-                    nodes.push(<InlineMath key={key++} math={mathExpr} />);
-                } catch {
-                    nodes.push(<span key={key++}>{mathExpr}</span>);
-                }
-                i = j;
-                continue;
+            // ВАЖНО: винаги render-ваме командата като математика, дори БЕЗ скоби -
+            // символи като \pi, \times, \neq, \infty, \cdot нямат нужда от {} след себе си.
+            flushBuffer();
+            try {
+                nodes.push(<InlineMath key={key++} math={mathExpr} />);
+            } catch {
+                nodes.push(<span key={key++}>{mathExpr}</span>);
             }
+            i = j;
+            continue;
         }
         buffer += text[i];
         i++;

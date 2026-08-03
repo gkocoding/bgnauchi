@@ -1,0 +1,14 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Импортирай тест от PDF</h1>
+<p>Качи PDF файл с матура/тест — системата ще извлече въпросите автоматично чрез AI. След създаване, провери верните отговори в списъка с въпроси, тъй като AI-то може да сгреши.</p>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <table>
+        {{ form.as_table }}
+    </table>
+    <input type="submit" value="Импортирай" class="default" style="margin-top: 15px;">
+</form>
+{% endblock %}
