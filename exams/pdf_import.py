@@ -26,7 +26,21 @@ def extract_text_from_pdf(pdf_file) -> str:
 
 
 def parse_questions_from_text(text: str) -> list[dict]:
-    lines = text.split("\n")
+    # Първо: разбиваме евентуални множество А)/Б)/В)/Г) на ЕДИН ред на отделни редове,
+    # защото понякога PDF-ът слага всички отговори на един ред.
+    inline_option_split = re.compile(r'(?=[АБВГABCD][\.\)]\s)', re.UNICODE)
+
+    raw_lines = text.split("\n")
+    lines = []
+    for raw_line in raw_lines:
+        # Ако редът съдържа повече от 1 маркер за отговор, разбиваме го
+        matches = list(OPTION_START.finditer(raw_line)) if False else None
+        parts = inline_option_split.split(raw_line)
+        # split() пази текста преди първия маркер като отделна част - махаме празните
+        for part in parts:
+            if part.strip():
+                lines.append(part)
+
     questions = []
     current = None
     current_option = None
@@ -40,7 +54,6 @@ def parse_questions_from_text(text: str) -> list[dict]:
         o_match = OPTION_START.match(line)
 
         if q_match:
-            # Ново въпросче започва - запазваме предишното, ако има
             if current and current.get("text"):
                 questions.append(current)
             current = {
@@ -58,7 +71,6 @@ def parse_questions_from_text(text: str) -> list[dict]:
                 current[f"option_{letter}"] = option_text
 
         elif current is not None:
-            # Продължение на текст (пренесен ред) - добавяме към последното поле
             if current_option:
                 current[f"option_{current_option}"] += " " + line
             else:
