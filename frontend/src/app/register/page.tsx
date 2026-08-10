@@ -10,6 +10,7 @@ export default function RegisterPage() {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [website, setWebsite] = useState(""); // honeypot - остава винаги празно за истински хора
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -18,7 +19,7 @@ export default function RegisterPage() {
         setError(null);
         setLoading(true);
 
-        const result = await register(username, email, password);
+        const result = await register(username, email, password, website);
 
         if (!result.success) {
             setError(result.error || "Възникна грешка.");
@@ -60,6 +61,20 @@ export default function RegisterPage() {
                     </p>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Honeypot - невидимо поле за хора, капан за ботове */}
+                        <div style={{ position: "absolute", left: "-9999px" }} aria-hidden="true">
+                            <label htmlFor="website">Website</label>
+                            <input
+                                type="text"
+                                id="website"
+                                name="website"
+                                tabIndex={-1}
+                                autoComplete="off"
+                                value={website}
+                                onChange={(e) => setWebsite(e.target.value)}
+                            />
+                        </div>
+
                         <div>
                             <label className="block text-xs font-medium text-[#9CA3C4] mb-1.5">
                                 Потребителско име

@@ -114,6 +114,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_RATES': {
+        'register': '20/day',
+        'login': '30/hour',
+    },
 }
 
 SIMPLE_JWT = {

@@ -49,13 +49,14 @@ export function logout() {
 export async function register(
     username: string,
     email: string,
-    password: string
+    password: string,
+    website: string = "" // honeypot - остава винаги празно за истински хора
 ): Promise<AuthResult> {
     try {
         const res = await fetch(`${API_URL}/api/auth/register/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, email, password }),
+            body: JSON.stringify({ username, email, password, website }),
         });
 
         if (!res.ok) {

@@ -11,6 +11,7 @@ from .serializers import (
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from .throttles import RegisterThrottle
 
 
 class SubjectViewSet(viewsets.ModelViewSet):
@@ -32,6 +33,13 @@ class ExamViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(subject__id=subject)
         return queryset
 
+    def get_permissions(self):
+        # "check" изисква логнат потребител - тестовете вече не могат
+        # да се решават анонимно, за да има смисъл записването на резултат.
+        if self.action == 'check':
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
     @action(detail=True, methods=['post'])
     def check(self, request, pk=None):
         exam = self.get_object()
@@ -48,14 +56,12 @@ class ExamViewSet(viewsets.ModelViewSet):
             if submitted == question.correct_option:
                 score += 1
 
-        # Ако потребителят е логнат, автоматично записваме резултата
-        if request.user and request.user.is_authenticated:
-            StudentAttempt.objects.create(
-                user=request.user,
-                exam=exam,
-                score=score,
-                total_questions=total,
-            )
+        StudentAttempt.objects.create(
+            user=request.user,
+            exam=exam,
+            score=score,
+            total_questions=total,
+        )
 
         return Response({
             'score': score,
@@ -68,6 +74,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = None
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegisterThrottle]
 
     def get_queryset(self):
         from django.contrib.auth.models import User
@@ -75,7 +82,6 @@ class RegisterView(generics.CreateAPIView):
 
 
 class MeView(APIView):
-    """Връща инфо за текущо логнатия потребител."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -84,7 +90,6 @@ class MeView(APIView):
 
 
 class MyAttemptsView(generics.ListAPIView):
-    """История на резултатите на текущия логнат потребител."""
     serializer_class = StudentAttemptSerializer
     permission_classes = [permissions.IsAuthenticated]
 

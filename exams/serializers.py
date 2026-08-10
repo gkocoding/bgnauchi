@@ -36,12 +36,28 @@ class StudentAttemptSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
+    email = serializers.EmailField(required=True)
+    # Honeypot поле - невидимо за истински хора, ботовете често го попълват автоматично.
+    # Не се записва никъде, само проверяваме дали е празно.
+    website = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password']
+        fields = ['id', 'username', 'email', 'password', 'website']
+
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Вече има регистриран потребител с този имейл.")
+        return value
+
+    def validate_website(self, value):
+        # Ако honeypot полето е попълнено - това е бот, отхвърляме заявката.
+        if value:
+            raise serializers.ValidationError("Невалидна заявка.")
+        return value
 
     def create(self, validated_data):
+        validated_data.pop('website', None)
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),

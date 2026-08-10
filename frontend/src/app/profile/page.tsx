@@ -30,10 +30,14 @@ export default function ProfilePage() {
         setUsername(getUsername());
 
         apiFetch("/api/attempts/")
-            .then((res) => res.json())
+            .then(async (res) => {
+                if (!res.ok) {
+                    router.push("/login");
+                    return null;
+                }
+                return res.json();
+            })
             .then((data) => {
-                // DRF понякога пейджинира отговора като {results: [...]}
-                // вместо чист масив — поддържаме и двата формата.
                 if (Array.isArray(data)) {
                     setAttempts(data);
                 } else if (Array.isArray(data?.results)) {

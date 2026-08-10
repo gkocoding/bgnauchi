@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import "katex/dist/katex.min.css";
 import { InlineMath } from "react-katex";
 import { apiFetch } from "@/lib/api";
+import { isLoggedIn } from "@/lib/auth";
 
 type Question = {
     id: number;
@@ -65,7 +66,6 @@ function renderTextWithMath(text: string) {
             while (j < text.length && /[a-zA-Z]/.test(text[j])) j++;
             let mathExpr = text.slice(i, j);
 
-            // До 2 последователни {...} групи (за \frac{a}{b}), с поддръжка на вложеност
             let groupsRead = 0;
             while (groupsRead < 2 && text[j] === "{") {
                 const [group, nextIndex] = readBraceGroup(text, j);
@@ -94,6 +94,7 @@ function renderTextWithMath(text: string) {
 
 export default function TestPage() {
     const params = useParams();
+    const router = useRouter();
     const examId = params.id as string;
 
     const [exam, setExam] = useState<Exam | null>(null);
@@ -105,13 +106,18 @@ export default function TestPage() {
     const [furthest, setFurthest] = useState(0);
 
     useEffect(() => {
+        if (!isLoggedIn()) {
+            router.push(`/login?next=/test/${examId}`);
+            return;
+        }
+
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/${examId}/`)
             .then((res) => res.json())
             .then((data) => {
                 setExam(data);
                 setLoading(false);
             });
-    }, [examId]);
+    }, [examId, router]);
 
     async function submitAnswers() {
         setSubmitting(true);
@@ -127,7 +133,6 @@ export default function TestPage() {
     function selectAnswer(questionId: number, option: string) {
         setAnswers((prev) => ({ ...prev, [String(questionId)]: option }));
 
-        // Автоматично напред само ако сме на "фронтовия" (най-новия) въпрос
         if (!exam) return;
         const isLast = currentIndex === exam.questions.length - 1;
         if (currentIndex === furthest && !isLast) {
@@ -284,7 +289,6 @@ export default function TestPage() {
             <section className="relative z-10 max-w-2xl mx-auto px-6 pt-4 pb-16">
                 <p className="text-[#9CA3C4] text-sm mb-3">{exam.title} · {exam.grade}. клас</p>
 
-                {/* Прогрес — клик за директен скок до посетен въпрос */}
                 <div className="flex items-center gap-2 mb-8">
                     {exam.questions.map((qq, i) => {
                         const visited = i <= furthest;
@@ -341,7 +345,6 @@ export default function TestPage() {
                     </div>
                 </div>
 
-                {/* Навигация */}
                 <div className="flex items-center justify-between mt-6">
                     <button
                         onClick={goBack}
