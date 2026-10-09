@@ -8,6 +8,7 @@ For more information on this file, see https://docs.djangoproject.com/en/6.0/top
 For the full list of settings and their values, see https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
 from pathlib import Path
@@ -22,11 +23,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-t%qh7xwd3i=!^06w8trb4&$)p5y41k@fw*$49x36!)np7z+byt'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
+
+# SECURITY WARNING: keep the secret key used in production secret!
+# Идва от променливата SECRET_KEY (.env локално / App Settings в Azure).
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-dev-only-key-not-for-production'
+    else:
+        raise ImproperlyConfigured(
+            "Липсва променливата SECRET_KEY. Задай я в Azure -> App Service -> Environment variables."
+        )
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if os.environ.get('DJANGO_ALLOWED_HOSTS') else []
 
@@ -117,11 +126,12 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'register': '20/day',
         'login': '30/hour',
+        'check': '60/hour',
     },
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
 }
@@ -145,7 +155,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Django 5.1+ премахна DEFAULT_FILE_STORAGE - вече се ползва STORAGES["default"].
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -156,9 +170,13 @@ AZURE_ACCOUNT_NAME = "bgnauchimedia"
 AZURE_CONTAINER = "media"
 AZURE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
 
-DEFAULT_FILE_STORAGE = "storages.backends.azure_storage.AzureStorage"
-
-MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/"
+if AZURE_CONNECTION_STRING:
+    STORAGES["default"] = {"BACKEND": "storages.backends.azure_storage.AzureStorage"}
+    MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/"
+else:
+    # Локална разработка без Azure: качените снимки отиват в ./media
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

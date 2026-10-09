@@ -25,6 +25,16 @@ class ExamSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'grade', 'exam_type', 'subject', 'questions']
 
 
+class ExamListSerializer(serializers.ModelSerializer):
+    """Лек вариант за списъци: без въпроси, само брой."""
+    subject = SubjectSerializer(read_only=True)
+    question_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Exam
+        fields = ['id', 'title', 'grade', 'exam_type', 'subject', 'question_count']
+
+
 class StudentAttemptSerializer(serializers.ModelSerializer):
     exam_title = serializers.CharField(source='exam.title', read_only=True)
 

@@ -15,7 +15,7 @@ class Exam(models.Model):
         ('kandidatstudentski', 'Кандидатстудентски'),
     ]
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    grade = models.IntegerField()  # 5, 7, 10, 12
+    grade = models.IntegerField()  # 4, 7, 10, 12
     title = models.CharField(max_length=255)
     exam_type = models.CharField(max_length=30, choices=EXAM_TYPES)
 
