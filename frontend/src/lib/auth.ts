@@ -114,6 +114,7 @@ export async function refreshAccessToken(): Promise<boolean> {
 
         const data = await res.json();
         localStorage.setItem(ACCESS_KEY, data.access);
+        if (data.refresh) localStorage.setItem(REFRESH_KEY, data.refresh);
         return true;
     } catch {
         return false;

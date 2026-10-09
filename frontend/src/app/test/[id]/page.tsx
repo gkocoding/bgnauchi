@@ -112,11 +112,15 @@ export default function TestPage() {
         }
 
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/${examId}/`)
-            .then((res) => res.json())
+            .then((res) => {
+                if (!res.ok) throw new Error("not found");
+                return res.json();
+            })
             .then((data) => {
                 setExam(data);
                 setLoading(false);
-            });
+            })
+            .catch(() => setLoading(false));
     }, [examId, router]);
 
     async function submitAnswers() {
@@ -125,6 +129,15 @@ export default function TestPage() {
             method: "POST",
             body: JSON.stringify({ answers }),
         });
+        if (!res.ok) {
+            setSubmitting(false);
+            alert(
+                res.status === 429
+                    ? "Твърде много опити за кратко време. Опитай пак по-късно."
+                    : "Възникна грешка при проверката. Опитай отново."
+            );
+            return;
+        }
         const data: CheckResult = await res.json();
         setResult(data);
         setSubmitting(false);
@@ -173,7 +186,7 @@ export default function TestPage() {
         const wrongQuestions = exam.questions.filter(
             (q) => answers[String(q.id)] !== result.correct_answers[String(q.id)]
         );
-        const pct = Math.round((result.score / result.total) * 100);
+        const pct = result.total > 0 ? Math.round((result.score / result.total) * 100) : 0;
 
         return (
             <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen relative overflow-hidden">
@@ -258,6 +271,14 @@ export default function TestPage() {
                         Обратно към началото →
                     </Link>
                 </section>
+            </div>
+        );
+    }
+
+    if (exam.questions.length === 0) {
+        return (
+            <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen flex items-center justify-center">
+                <p className="font-display text-sm text-[#9CA3C4]">Този тест все още няма въпроси.</p>
             </div>
         );
     }
