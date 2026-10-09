@@ -58,8 +58,17 @@ jobs:
           name: python-app
       
       - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
+        continue-on-error: true
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'bgnauchi-backend'
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_234D851877024C978C224B9220F56CFC }}
+
+      - name: 'Retry deploy to Azure Web App after transient conflict'
+        if: steps.deploy-to-webapp.outcome == 'failure'
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'bgnauchi-backend'
           slot-name: 'Production'
