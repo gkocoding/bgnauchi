@@ -1,13 +1,13 @@
 import Link from "next/link";
+import Nav from "@/components/Nav";
+import Crumbs from "@/components/Crumbs";
+import SubjectIcon from "@/components/SubjectIcon";
+import { examTypeLabel, metaFor } from "@/lib/subjects";
+import type { CSSProperties } from "react";
 
 type Subject = {
     id: number;
     name: string;
-};
-
-type Question = {
-    id: number;
-    text: string;
 };
 
 type Exam = {
@@ -16,14 +16,7 @@ type Exam = {
     exam_type: string;
     grade: number;
     subject: Subject;
-    questions: Question[];
-};
-
-const gradeMeta: Record<string, { label: string }> = {
-    "4": { label: "начален етап" },
-    "7": { label: "прогимназия" },
-    "10": { label: "гимназия" },
-    "12": { label: "матура" },
+    question_count: number;
 };
 
 async function getExamsForSubject(grade: string, subjectId: string): Promise<{ exams: Exam[]; subjectName: string | null }> {
@@ -38,6 +31,10 @@ async function getExamsForSubject(grade: string, subjectId: string): Promise<{ e
     return { exams, subjectName };
 }
 
+function questionsWord(n: number) {
+    return n === 1 ? "1 въпрос" : `${n} въпроса`;
+}
+
 export default async function SubjectPage({
     params,
 }: {
@@ -45,86 +42,81 @@ export default async function SubjectPage({
 }) {
     const { grade, subject } = await params;
     const { exams, subjectName } = await getExamsForSubject(grade, subject);
-    const meta = gradeMeta[grade] ?? { label: "клас " + grade };
+    const sm = metaFor(subjectName ?? "", Number(subject) || 0);
 
     return (
-        <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen relative overflow-hidden">
-            <div className="starfield" />
-            <div className="absolute top-1/4 -left-40 w-96 h-96 rounded-full bg-[#4FD1C5] opacity-[0.07] blur-[100px]" />
-            <div className="absolute bottom-1/4 -right-40 w-96 h-96 rounded-full bg-[#A78BFA] opacity-[0.08] blur-[100px]" />
+        <>
+            <Nav />
 
-            <nav className="relative z-10 max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-                <Link href="/" className="font-display text-xl font-bold tracking-wide">
-                    bg<span className="text-[#4FD1C5]">научи</span>
-                </Link>
-                <Link
-                    href={`/klas/${grade}`}
-                    className="flex items-center gap-1.5 bg-[#141833] border border-white/10 text-sm font-medium px-4 py-2 rounded-full hover:border-[#4FD1C5]/50 transition-colors"
-                >
-                    ← Предмети
-                </Link>
-            </nav>
+            <main className="mx-auto max-w-6xl px-5 pb-24 pt-2">
+                <Crumbs
+                    items={[
+                        { label: "Начало", href: "/" },
+                        { label: `${grade}. клас`, href: `/klas/${grade}` },
+                        { label: subjectName ?? "Предмет" },
+                    ]}
+                />
 
-            {/* Breadcrumb пътека — ясен път назад през всяко ниво */}
-            <div className="relative z-10 max-w-3xl mx-auto px-6">
-                <div className="flex items-center flex-wrap gap-2 text-sm font-mono text-[#9CA3C4] mb-2">
-                    <Link href="/" className="hover:text-[#4FD1C5] transition-colors">
-                        Начало
-                    </Link>
-                    <span className="text-white/20">/</span>
-                    <Link href={`/klas/${grade}`} className="hover:text-[#4FD1C5] transition-colors">
-                        {grade}. клас
-                    </Link>
-                    <span className="text-white/20">/</span>
-                    <span className="text-[#EDEFF7]">{subjectName ?? "Предмет"}</span>
-                </div>
-            </div>
-
-            <section className="relative z-10 max-w-3xl mx-auto px-6 pt-6 pb-14 text-center">
-                <div className="inline-flex items-center gap-2 text-xs font-mono text-[#F2C14E] mb-6 tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F2C14E] pulse-node" />
-                    СЕКТОР: {grade}. КЛАС · {meta.label.toUpperCase()}
-                </div>
-                <h1 className="font-display text-3xl md:text-5xl font-bold leading-tight mb-4">
-                    {subjectName ?? "Предмет"}
-                </h1>
-                <p className="text-[#9CA3C4] text-lg max-w-xl mx-auto">
-                    Избери тест по-долу и виж какво знаеш — резултатът излиза веднага.
-                </p>
-            </section>
-
-            <section className="relative z-10 max-w-4xl mx-auto px-6 pb-24">
-                {exams.length === 0 ? (
-                    <div className="bg-[#141833] border border-white/10 rounded-3xl p-10 text-center">
-                        <p className="font-display font-semibold text-lg mb-2">
-                            Все още няма готови тестове по този предмет
+                <header className="mb-12 flex items-center gap-5">
+                    <span
+                        className="stamp-in grid h-20 w-20 shrink-0 place-items-center rounded-2xl border-[3px] border-ink shadow-pop-sm sm:h-24 sm:w-24"
+                        style={{ background: sm.tint }}
+                    >
+                        <SubjectIcon kind={sm.icon} name={subjectName ?? "?"} className="h-11 w-11 sm:h-14 sm:w-14" />
+                    </span>
+                    <div>
+                        <h1 className="font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+                            {subjectName ?? "Предмет"}
+                        </h1>
+                        <p className="mt-2 font-hand text-[1.6rem] font-semibold leading-none text-cobalt-deep">
+                            Избери тест и виж какво знаеш
                         </p>
-                        <p className="text-[#9CA3C4] text-sm">Добавяме нови всяка седмица — наглеждай тук.</p>
+                    </div>
+                </header>
+
+                {exams.length === 0 ? (
+                    <div className="sheet mx-auto max-w-xl border-dashed p-10 text-center">
+                        <p className="mb-2 font-display text-xl font-bold">Все още няма тестове по този предмет</p>
+                        <p className="mb-7 text-ink-soft">Добавяме нови всяка седмица. Провери пак скоро.</p>
+                        <Link href={`/klas/${grade}`} className="btn btn-white">
+                            Към другите предмети
+                        </Link>
                     </div>
                 ) : (
-                    <div className="grid md:grid-cols-2 gap-5">
-                        {exams.map((exam) => (
-                            <Link
+                    <ul className="max-w-3xl space-y-6">
+                        {exams.map((exam, i) => (
+                            <li
                                 key={exam.id}
-                                href={`/test/${exam.id}`}
-                                className="group relative bg-[#141833] border border-white/10 rounded-3xl p-6 hover:border-[#4FD1C5]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between overflow-hidden"
+                                className="drop-in"
+                                style={{ "--i": i, "--r": i % 2 === 0 ? "-1.5deg" : "1.5deg" } as CSSProperties}
                             >
-                                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#4FD1C5] opacity-0 group-hover:opacity-10 blur-2xl transition-opacity duration-300" />
-                                <div className="relative">
-                                    <div className="font-mono text-[11px] text-[#F2C14E] mb-2 tracking-wider">
-                                        {exam.exam_type === "matura" ? "МАТУРА" : "КАНДИДАТСТУДЕНТСКИ"}
+                                <Link href={`/test/${exam.id}`} className="ticket">
+                                    <div className="px-5 py-5 sm:px-7 sm:py-6">
+                                        <span
+                                            className="mb-3 inline-block rounded-full border-2 border-ink px-3 py-0.5 font-display text-xs font-semibold"
+                                            style={{ background: exam.exam_type === "matura" ? "#FFF4BF" : "#E4EAFF" }}
+                                        >
+                                            {examTypeLabel(exam.exam_type)}
+                                        </span>
+                                        <div className="font-display text-xl font-bold leading-snug sm:text-2xl">
+                                            {exam.title}
+                                        </div>
+                                        <div className="mt-1.5 font-display text-sm font-medium text-ink-soft">
+                                            {questionsWord(exam.question_count)}
+                                        </div>
                                     </div>
-                                    <div className="font-display text-lg font-bold mb-1">{exam.title}</div>
-                                    <div className="text-sm text-[#9CA3C4] font-mono">{exam.questions.length} въпроса</div>
-                                </div>
-                                <div className="relative text-2xl text-[#4FD1C5] group-hover:translate-x-1 transition-transform duration-300">
-                                    →
-                                </div>
-                            </Link>
+                                    <div className="stub">
+                                        <span>Започни</span>
+                                        <svg viewBox="0 0 24 24" className="arrow h-6 w-6" aria-hidden="true">
+                                            <path d="M4 12h15M13 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </div>
+                                </Link>
+                            </li>
                         ))}
-                    </div>
+                    </ul>
                 )}
-            </section>
-        </div>
+            </main>
+        </>
     );
 }

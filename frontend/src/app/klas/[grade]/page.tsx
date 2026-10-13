@@ -1,4 +1,9 @@
 import Link from "next/link";
+import Nav from "@/components/Nav";
+import Crumbs from "@/components/Crumbs";
+import SubjectIcon from "@/components/SubjectIcon";
+import { gradeLabel, metaFor } from "@/lib/subjects";
+import type { CSSProperties } from "react";
 
 type Subject = {
     id: number;
@@ -14,112 +19,101 @@ type Exam = {
     question_count: number;
 };
 
-const gradeMeta: Record<string, { label: string }> = {
-    "4": { label: "начален етап" },
-    "7": { label: "прогимназия" },
-    "10": { label: "гимназия" },
-    "12": { label: "матура" },
-};
-
-async function getExamsForSubject(grade: string, subjectId: string): Promise<{ exams: Exam[]; subjectName: string | null }> {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/?grade=${grade}&subject=${subjectId}`, {
+async function getExams(grade: string): Promise<Exam[]> {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/?grade=${grade}`, {
         cache: "no-store",
     });
-    if (!res.ok) return { exams: [], subjectName: null };
-
-    const exams: Exam[] = await res.json();
-    const subjectName = exams.length > 0 ? exams[0].subject.name : null;
-
-    return { exams, subjectName };
+    if (!res.ok) return [];
+    return res.json();
 }
 
-export default async function SubjectPage({
+function getUniqueSubjects(exams: Exam[]): (Subject & { tests: number })[] {
+    const map = new Map<number, Subject & { tests: number }>();
+    for (const exam of exams) {
+        if (!exam.subject) continue;
+        const found = map.get(exam.subject.id);
+        if (found) found.tests += 1;
+        else map.set(exam.subject.id, { ...exam.subject, tests: 1 });
+    }
+    return Array.from(map.values());
+}
+
+function testsWord(n: number) {
+    return n === 1 ? "1 тест" : `${n} теста`;
+}
+
+export default async function KlasPage({
     params,
 }: {
-    params: Promise<{ grade: string; subject: string }>;
+    params: Promise<{ grade: string }>;
 }) {
-    const { grade, subject } = await params;
-    const { exams, subjectName } = await getExamsForSubject(grade, subject);
-    const meta = gradeMeta[grade] ?? { label: "клас " + grade };
+    const { grade } = await params;
+    const exams = await getExams(grade);
+    const subjects = getUniqueSubjects(exams);
 
     return (
-        <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen relative overflow-hidden">
-            <div className="starfield" />
-            <div className="absolute top-1/4 -left-40 w-96 h-96 rounded-full bg-[#4FD1C5] opacity-[0.07] blur-[100px]" />
-            <div className="absolute bottom-1/4 -right-40 w-96 h-96 rounded-full bg-[#A78BFA] opacity-[0.08] blur-[100px]" />
+        <>
+            <Nav />
 
-            <nav className="relative z-10 max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-                <Link href="/" className="font-display text-xl font-bold tracking-wide">
-                    bg<span className="text-[#4FD1C5]">научи</span>
-                </Link>
-                <Link
-                    href={`/klas/${grade}`}
-                    className="flex items-center gap-1.5 bg-[#141833] border border-white/10 text-sm font-medium px-4 py-2 rounded-full hover:border-[#4FD1C5]/50 transition-colors"
-                >
-                    ← Предмети
-                </Link>
-            </nav>
+            <main className="mx-auto max-w-6xl px-5 pb-24 pt-2">
+                <Crumbs items={[{ label: "Начало", href: "/" }, { label: `${grade}. клас` }]} />
 
-            {/* Breadcrumb пътека — ясен път назад през всяко ниво */}
-            <div className="relative z-10 max-w-3xl mx-auto px-6">
-                <div className="flex items-center flex-wrap gap-2 text-sm font-mono text-[#9CA3C4] mb-2">
-                    <Link href="/" className="hover:text-[#4FD1C5] transition-colors">
-                        Начало
-                    </Link>
-                    <span className="text-white/20">/</span>
-                    <Link href={`/klas/${grade}`} className="hover:text-[#4FD1C5] transition-colors">
-                        {grade}. клас
-                    </Link>
-                    <span className="text-white/20">/</span>
-                    <span className="text-[#EDEFF7]">{subjectName ?? "Предмет"}</span>
-                </div>
-            </div>
-
-            <section className="relative z-10 max-w-3xl mx-auto px-6 pt-6 pb-14 text-center">
-                <div className="inline-flex items-center gap-2 text-xs font-mono text-[#F2C14E] mb-6 tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F2C14E] pulse-node" />
-                    СЕКТОР: {grade}. КЛАС · {meta.label.toUpperCase()}
-                </div>
-                <h1 className="font-display text-3xl md:text-5xl font-bold leading-tight mb-4">
-                    {subjectName ?? "Предмет"}
-                </h1>
-                <p className="text-[#9CA3C4] text-lg max-w-xl mx-auto">
-                    Избери тест по-долу и виж какво знаеш — резултатът излиза веднага.
-                </p>
-            </section>
-
-            <section className="relative z-10 max-w-4xl mx-auto px-6 pb-24">
-                {exams.length === 0 ? (
-                    <div className="bg-[#141833] border border-white/10 rounded-3xl p-10 text-center">
-                        <p className="font-display font-semibold text-lg mb-2">
-                            Все още няма готови тестове по този предмет
+                <header className="mb-12 flex items-center gap-5 sm:gap-7">
+                    <span className="stamp stamp-in !h-[5.5rem] !w-[5.5rem] !text-[2.8rem] sm:!h-28 sm:!w-28 sm:!text-[3.4rem]">
+                        {grade}
+                    </span>
+                    <div>
+                        <h1 className="font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+                            Избери предмет
+                        </h1>
+                        <p className="mt-2 font-hand text-[1.6rem] font-semibold leading-none text-cobalt-deep">
+                            {grade}. клас · {gradeLabel(grade).toLowerCase()}
                         </p>
-                        <p className="text-[#9CA3C4] text-sm">Добавяме нови всяка седмица — наглеждай тук.</p>
+                    </div>
+                </header>
+
+                {subjects.length === 0 ? (
+                    <div className="sheet mx-auto max-w-xl border-dashed p-10 text-center">
+                        <p className="mb-2 font-display text-xl font-bold">Все още няма предмети за този клас</p>
+                        <p className="mb-7 text-ink-soft">Добавяме нови тестове всяка седмица. Провери пак скоро.</p>
+                        <Link href="/" className="btn btn-white">
+                            Към другите класове
+                        </Link>
                     </div>
                 ) : (
-                    <div className="grid md:grid-cols-2 gap-5">
-                        {exams.map((exam) => (
-                            <Link
-                                key={exam.id}
-                                href={`/test/${exam.id}`}
-                                className="group relative bg-[#141833] border border-white/10 rounded-3xl p-6 hover:border-[#4FD1C5]/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between overflow-hidden"
-                            >
-                                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#4FD1C5] opacity-0 group-hover:opacity-10 blur-2xl transition-opacity duration-300" />
-                                <div className="relative">
-                                    <div className="font-mono text-[11px] text-[#F2C14E] mb-2 tracking-wider">
-                                        {exam.exam_type === "matura" ? "МАТУРА" : "КАНДИДАТСТУДЕНТСКИ"}
-                                    </div>
-                                    <div className="font-display text-lg font-bold mb-1">{exam.title}</div>
-                                    <div className="text-sm text-[#9CA3C4] font-mono">{exam.question_count} въпроса</div>
-                                </div>
-                                <div className="relative text-2xl text-[#4FD1C5] group-hover:translate-x-1 transition-transform duration-300">
-                                    →
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                    <ul className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+                        {subjects.map((subject, i) => {
+                            const sm = metaFor(subject.name, i);
+                            const tilt = i % 2 === 0 ? "-3deg" : "3deg";
+                            return (
+                                <li
+                                    key={subject.id}
+                                    className="drop-in"
+                                    style={{ "--i": i, "--r": tilt } as CSSProperties}
+                                >
+                                    <Link
+                                        href={`/klas/${grade}/${subject.id}`}
+                                        className="notebook"
+                                        style={{ "--c": sm.color, "--t": sm.tint } as CSSProperties}
+                                    >
+                                        <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-ink bg-white">
+                                            <SubjectIcon kind={sm.icon} name={subject.name} className="h-8 w-8" />
+                                        </span>
+                                        <span>
+                                            <span className="block font-display text-xl font-bold leading-snug">
+                                                {subject.name}
+                                            </span>
+                                            <span className="mt-1 block font-hand text-[1.35rem] font-semibold leading-none">
+                                                {testsWord(subject.tests)}
+                                            </span>
+                                        </span>
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 )}
-            </section>
-        </div>
+            </main>
+        </>
     );
 }

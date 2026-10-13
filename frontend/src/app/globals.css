@@ -1,105 +1,377 @@
 @import "tailwindcss";
 
-body {
-  font-family: 'Manrope', sans-serif;
-  background: #0B0E1A;
+/* ============================================================
+   bgнаучи — тетрадка на квадратчета
+   Палитра: мастилено синьо, кобалт, маркер, червен химикал
+   ============================================================ */
+@theme {
+  --color-paper: #F6F8FF;
+  --color-paper-deep: #E8EDFF;
+  --color-grid: #DCE4FC;
+  --color-ink: #14213D;
+  --color-ink-soft: #4A5578;
+  --color-cobalt: #2B50E6;
+  --color-cobalt-deep: #1E3BB8;
+  --color-cobalt-tint: #E4EAFF;
+  --color-marker: #FFD93D;
+  --color-marker-deep: #F2C200;
+  --color-marker-tint: #FFF4BF;
+  --color-pen: #C92A43;
+  --color-pen-tint: #FFE3E8;
+  --color-ok: #0B7A52;
+  --color-ok-tint: #D8F5E8;
+
+  --font-display: "Geologica", "Segoe UI", system-ui, sans-serif;
+  --font-text: "Literata", Georgia, "Times New Roman", serif;
+  --font-hand: "Caveat", "Segoe Script", "Bradley Hand", cursive;
+
+  --shadow-pop-sm: 2px 2px 0 0 var(--color-ink);
+  --shadow-pop: 4px 4px 0 0 var(--color-ink);
+  --shadow-pop-lg: 7px 7px 0 0 var(--color-ink);
+
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.font-display {
-  font-family: 'Unbounded', sans-serif;
-}
-
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* --- Стар полета (фон) --- */
-.starfield {
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(1.5px 1.5px at 20% 30%, rgba(237,239,247,0.9), transparent),
-    radial-gradient(1px 1px at 65% 15%, rgba(237,239,247,0.7), transparent),
-    radial-gradient(2px 2px at 80% 45%, rgba(237,239,247,0.8), transparent),
-    radial-gradient(1px 1px at 35% 70%, rgba(237,239,247,0.6), transparent),
-    radial-gradient(1.5px 1.5px at 90% 80%, rgba(237,239,247,0.7), transparent),
-    radial-gradient(1px 1px at 10% 85%, rgba(237,239,247,0.5), transparent),
-    radial-gradient(1.5px 1.5px at 50% 90%, rgba(237,239,247,0.6), transparent),
-    radial-gradient(1px 1px at 75% 60%, rgba(237,239,247,0.5), transparent);
-  background-repeat: repeat;
-  background-size: 220px 220px;
-  opacity: 0.8;
-  pointer-events: none;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
-
-.star-twinkle {
-  animation: twinkle 4s ease-in-out infinite;
-}
-
-/* --- Съзвездие: постоянно "течаща" линия (infinite) --- */
-@keyframes flowLine {
-  to {
-    stroke-dashoffset: -24;
-  }
-}
-
-.constellation-line {
-  stroke-dasharray: 6 4;
-  animation: flowLine 1.8s linear infinite;
-}
-
-/* --- Падаща звезда при hover на CTA --- */
-@keyframes shootingStar {
-  0% { transform: translateX(-40px) translateY(-40px); opacity: 0; }
-  15% { opacity: 1; }
-  100% { transform: translateX(220px) translateY(220px); opacity: 0; }
-}
-
-.shooting-star {
-  animation: shootingStar 1s ease-in forwards;
-}
-
-/* --- Пулсираща звезда-нод (клас маркер) --- */
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 193, 78, 0.5); }
-  50% { box-shadow: 0 0 0 10px rgba(242, 193, 78, 0); }
-}
-
-.pulse-node {
-  animation: pulseGlow 2.5s ease-in-out infinite;
-}
-
-/* --- Стара анимация, запазена за съвместимост --- */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(3deg); }
-}
-
-.floaty {
-  animation: float 6s ease-in-out infinite;
-}
-
-/* --- Respect reduced motion --- */
-@media (prefers-reduced-motion: reduce) {
-  .star-twinkle,
-  .constellation-line,
-  .shooting-star,
-  .pulse-node,
-  .floaty {
-    animation: none !important;
-  }
-}
-html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
+/* ---------- База ---------- */
+@layer base {
   html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
+
+  body {
+    font-family: var(--font-text);
+    color: var(--color-ink);
+    background-color: var(--color-paper);
+    /* квадратчета като в тетрадка */
+    background-image:
+      linear-gradient(var(--color-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background: var(--color-marker);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-cobalt);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+
+/* ---------- Компоненти ---------- */
+@layer components {
+  /* Бутон: твърда сянка, която се "натиска" */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    color: var(--color-ink);
+    background: var(--color-marker);
+    border: 2px solid var(--color-ink);
+    border-radius: 14px;
+    padding: 0.8rem 1.4rem;
+    box-shadow: var(--shadow-pop);
+    transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease, background-color 0.2s ease;
+    text-decoration: none;
+  }
+  .btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 var(--color-ink);
+  }
+  .btn:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 0 var(--color-ink);
+    transition-duration: 0.06s;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    box-shadow: none;
+    transform: none;
+  }
+  .btn-white { background: #fff; }
+  .btn-blue { background: var(--color-cobalt); color: #fff; }
+  .btn-sm { font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 12px; box-shadow: var(--shadow-pop-sm); }
+  .btn-sm:hover:not(:disabled) { box-shadow: 4px 4px 0 0 var(--color-ink); }
+
+  /* Лист хартия */
+  .sheet {
+    background: #fff;
+    border: 2px solid var(--color-ink);
+    border-radius: 20px;
+    box-shadow: var(--shadow-pop);
+  }
+
+  /* Поле за въвеждане */
+  .field {
+    width: 100%;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--color-ink);
+    background: #fff;
+    border: 2px solid var(--color-ink);
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    transition: box-shadow 0.2s ease, transform 0.2s var(--ease-spring);
+  }
+  .field::placeholder { color: #7B86A8; }
+  .field:focus {
+    outline: none;
+    box-shadow: 4px 4px 0 0 var(--color-cobalt);
+    transform: translate(-1px, -1px);
+  }
+
+  /* Печат с номера на класа */
+  .stamp {
+    display: inline-grid;
+    place-items: center;
+    width: 4.6rem;
+    height: 4.6rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--color-ink);
+    background: var(--color-marker);
+    border: 3px solid var(--color-ink);
+    border-radius: 9999px;
+    box-shadow: var(--shadow-pop-sm);
+  }
+
+  /* Корица на тетрадка (предмет) */
+  .notebook {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-height: 11.5rem;
+    height: 100%;
+    padding: 1.3rem 1.3rem 1.3rem 3rem;
+    color: var(--color-ink);
+    background: var(--t, var(--color-cobalt-tint));
+    border: 2px solid var(--color-ink);
+    border-radius: 6px 18px 18px 6px;
+    box-shadow: var(--shadow-pop);
+    transform-origin: left center;
+    transition: transform 0.35s var(--ease-spring), box-shadow 0.3s ease;
+    text-decoration: none;
+  }
+  .notebook::before { /* гръбче */
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 1.9rem;
+    background: var(--c, var(--color-cobalt));
+    border-right: 2px solid var(--color-ink);
+    border-radius: 4px 0 0 4px;
+  }
+  .notebook::after { /* дупки на спиралата */
+    content: "";
+    position: absolute;
+    left: 0.45rem;
+    top: 0.55rem;
+    bottom: 0.3rem;
+    width: 1rem;
+    background: radial-gradient(circle at 50% 50%, var(--color-paper) 0 0.2rem, var(--color-ink) 0.2rem calc(0.2rem + 2px), transparent calc(0.2rem + 2px)) 0 0 / 100% 1.7rem repeat-y;
+  }
+  .notebook:hover {
+    transform: perspective(800px) rotateY(-9deg) translate(-2px, -5px);
+    box-shadow: 9px 9px 0 0 var(--color-ink);
+  }
+  .notebook:active {
+    transform: perspective(800px) rotateY(-3deg) translate(3px, 3px);
+    box-shadow: 1px 1px 0 0 var(--color-ink);
+    transition-duration: 0.08s;
+  }
+
+  /* Билет за изпит */
+  .ticket {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    color: var(--color-ink);
+    background: #fff;
+    border: 2px solid var(--color-ink);
+    border-radius: 16px;
+    box-shadow: var(--shadow-pop);
+    transition: transform 0.3s var(--ease-spring), box-shadow 0.25s ease;
+    text-decoration: none;
+  }
+  .ticket::before,
+  .ticket::after { /* изрязвания на перфорацията */
+    content: "";
+    position: absolute;
+    right: calc(7.5rem - 0.65rem);
+    width: 1.3rem;
+    height: 0.65rem;
+    background: var(--color-paper);
+    border: 2px solid var(--color-ink);
+  }
+  .ticket::before { top: -2px; border-top: 0; border-radius: 0 0 1.3rem 1.3rem; }
+  .ticket::after { bottom: -2px; border-bottom: 0; border-radius: 1.3rem 1.3rem 0 0; }
+  .ticket .stub {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    width: 7.5rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: var(--color-marker-tint);
+    border-left: 2px dashed var(--color-ink);
+    border-radius: 0 14px 14px 0;
+    transition: background-color 0.25s ease;
+  }
+  .ticket .stub .arrow { transition: transform 0.3s var(--ease-spring); }
+  .ticket:hover {
+    transform: translate(-3px, -4px) rotate(-0.4deg);
+    box-shadow: var(--shadow-pop-lg);
+  }
+  .ticket:hover .stub { background: var(--color-marker); }
+  .ticket:hover .stub .arrow { transform: translateX(6px); }
+  .ticket:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 0 var(--color-ink);
+    transition-duration: 0.06s;
+  }
+}
+
+/* ============================================================
+   Анимации
+   ============================================================ */
+
+/* Тетрадките "падат" върху бюрото — само при пристигане на страницата */
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-34px) rotate(var(--r, -3deg)) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+.drop-in {
+  animation: drop-in 0.75s var(--ease-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms + 80ms);
+}
+
+/* Печат: пристига отгоре и "удря" хартията */
+@keyframes stamp-in {
+  0% { opacity: 0; transform: scale(2.2) rotate(-18deg); }
+  60% { opacity: 1; transform: scale(0.94) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.stamp-in { animation: stamp-in 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; animation-delay: 0.1s; }
+
+/* Страница на тест: обръщане напред / назад */
+@keyframes turn-next {
+  from { opacity: 0; transform: translateX(56px) rotate(1.8deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes turn-prev {
+  from { opacity: 0; transform: translateX(-56px) rotate(-1.8deg); }
+  to { opacity: 1; transform: none; }
+}
+.turn-next { animation: turn-next 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
+.turn-prev { animation: turn-prev 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
+
+/* Линия, нарисувана с химикал (елементът трябва да има pathLength="1") */
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw var(--dur, 0.5s) cubic-bezier(0.6, 0.05, 0.3, 1) var(--delay, 0s) forwards;
+}
+
+/* Вълна около станция, когато химикалът стигне до нея */
+@keyframes ripple {
+  from { opacity: 0.7; transform: scale(1); }
+  to { opacity: 0; transform: scale(2.1); }
+}
+.ripple { animation: ripple 0.9s ease-out forwards; }
+
+/* Грешка във форма: разклащане */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+.shake { animation: shake 0.45s ease-in-out; }
+
+/* Малко подскачане за елементи, които се появяват при действие */
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.6) rotate(-8deg); }
+  to { opacity: 1; transform: none; }
+}
+.pop { animation: pop 0.45s var(--ease-spring) backwards; animation-delay: var(--delay, 0s); }
+
+/* Конфети */
+@keyframes confetti {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(0.5); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1); }
+}
+.confetti-bit {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: 0.55rem;
+  height: 0.95rem;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti 1.7s cubic-bezier(0.15, 0.7, 0.3, 1) var(--delay, 0s) forwards;
+}
+
+/* Индикатор за зареждане: драсканица */
+@keyframes scribble {
+  0% { stroke-dashoffset: 1; }
+  50% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1; }
+}
+.scribble { stroke-dasharray: 1; animation: scribble 1.5s ease-in-out infinite; }
+
+/* Молив, който пише, докато проверяваме */
+@keyframes write {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(3px) rotate(8deg); }
+  75% { transform: translateX(-3px) rotate(-6deg); }
+}
+.writing { animation: write 0.5s ease-in-out infinite; }
+
+/* Маркер, който се плъзга под текст при hover */
+.marker-line {
+  background-image: linear-gradient(var(--color-marker), var(--color-marker));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 0% 38%;
+  transition: background-size 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.marker-line:hover,
+.marker-line:focus-visible { background-size: 100% 38%; }
+
+/* ---------- Намалено движение ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.001ms !important;
+  }
+  .draw { stroke-dashoffset: 0; }
+  .scribble { stroke-dashoffset: 0; }
 }

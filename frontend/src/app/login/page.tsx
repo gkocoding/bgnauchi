@@ -4,12 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { login } from "@/lib/auth";
+import AuthShell from "@/components/AuthShell";
+import { safeNext } from "@/lib/nav";
 
 export default function LoginPage() {
     const router = useRouter();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [errorCount, setErrorCount] = useState(0);
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
@@ -22,81 +26,81 @@ export default function LoginPage() {
 
         if (!result.success) {
             setError(result.error || "Възникна грешка.");
+            setErrorCount((c) => c + 1);
             return;
         }
 
-        router.push("/profile");
+        router.push(safeNext() ?? "/profile");
     }
 
     return (
-        <div className="bg-[#0B0E1A] text-[#EDEFF7] min-h-screen relative overflow-hidden">
-            <div className="starfield" />
-            <div className="absolute top-1/4 -left-40 w-96 h-96 rounded-full bg-[#4FD1C5] opacity-[0.07] blur-[100px]" />
-            <div className="absolute bottom-1/4 -right-40 w-96 h-96 rounded-full bg-[#A78BFA] opacity-[0.08] blur-[100px]" />
+        <AuthShell title="Здравей отново" pitch="Влез, за да продължиш оттам, откъдето спря, и да виждаш всичките си резултати.">
+            <div className="sheet p-7 sm:p-9">
+                <h2 className="mb-1 font-display text-2xl font-extrabold">Вход</h2>
+                <p className="mb-7 text-ink-soft">Влез в профила си</p>
 
-            <nav className="relative z-10 max-w-3xl mx-auto px-6 py-6">
-                <Link href="/" className="font-display text-xl font-bold tracking-wide">
-                    bg<span className="text-[#4FD1C5]">научи</span>
-                </Link>
-            </nav>
-
-            <section className="relative z-10 max-w-md mx-auto px-6 py-10">
-                <div className="bg-[#141833] border border-white/10 rounded-3xl p-8">
-                    <div className="inline-flex items-center gap-2 text-xs font-mono text-[#F2C14E] mb-4 tracking-wider">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#F2C14E] pulse-node" />
-                        ВРЪЩАНЕ НА ОРБИТА
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <label htmlFor="username" className="mb-1.5 block font-display text-sm font-semibold">
+                            Потребителско име
+                        </label>
+                        <input
+                            id="username"
+                            type="text"
+                            required
+                            autoComplete="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="field"
+                        />
                     </div>
-                    <h1 className="font-display text-2xl font-bold mb-2">Вход</h1>
-                    <p className="text-[#9CA3C4] text-sm mb-8">Влез в профила си</p>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-[#9CA3C4] mb-1.5">
-                                Потребителско име
-                            </label>
+                    <div>
+                        <label htmlFor="password" className="mb-1.5 block font-display text-sm font-semibold">
+                            Парола
+                        </label>
+                        <div className="relative">
                             <input
-                                type="text"
+                                id="password"
+                                type={showPassword ? "text" : "password"}
                                 required
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-[#0B0E1A] border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-[#4FD1C5]/60 transition-colors"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-medium text-[#9CA3C4] mb-1.5">
-                                Парола
-                            </label>
-                            <input
-                                type="password"
-                                required
+                                autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-[#0B0E1A] border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-[#4FD1C5]/60 transition-colors"
+                                className="field !pr-24"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((s) => !s)}
+                                className="marker-line absolute right-3 top-1/2 -translate-y-1/2 font-display text-sm font-semibold text-ink-soft hover:text-ink"
+                            >
+                                {showPassword ? "Скрий" : "Покажи"}
+                            </button>
                         </div>
+                    </div>
 
-                        {error && (
-                            <p className="text-[#F87171] text-sm font-medium">{error}</p>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full font-display font-bold text-sm bg-[#F2C14E] text-[#0B0E1A] px-6 py-3.5 rounded-full hover:scale-[1.02] transition-transform duration-300 disabled:opacity-40 disabled:hover:scale-100"
+                    {error && (
+                        <p
+                            key={errorCount}
+                            role="alert"
+                            className="shake rounded-xl border-2 border-pen bg-pen-tint px-4 py-3 font-display text-sm font-semibold text-pen"
                         >
-                            {loading ? "Влизаме..." : "Влез"}
-                        </button>
-                    </form>
+                            {error}
+                        </p>
+                    )}
 
-                    <p className="text-center text-sm text-[#9CA3C4] mt-6">
-                        Нямаш профил?{" "}
-                        <Link href="/register" className="text-[#4FD1C5] font-medium">
-                            Регистрирай се
-                        </Link>
-                    </p>
-                </div>
-            </section>
-        </div>
+                    <button type="submit" disabled={loading} className="btn w-full">
+                        {loading ? "Влизаме…" : "Влез"}
+                    </button>
+                </form>
+
+                <p className="mt-7 text-center text-ink-soft">
+                    Нямаш профил?{" "}
+                    <Link href="/register" className="marker-line font-display font-bold text-cobalt-deep">
+                        Регистрирай се
+                    </Link>
+                </p>
+            </div>
+        </AuthShell>
     );
 }
