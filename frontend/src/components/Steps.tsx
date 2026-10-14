@@ -1,53 +1,50 @@
-"use client";
-
-import { useInView } from "./useInView";
-
-const steps = [
-    {
-        title: "Избери клас и предмет",
-        text: "Пътят по-горе води до всички тестове за твоя клас.",
-    },
-    {
-        title: "Реши в реалния формат",
-        text: "Въпросите следват структурата на матурите и националните изпити, а формулите се четат ясно.",
-    },
-    {
-        title: "Прегледай грешките",
-        text: "След теста виждаш кое е вярно. Всеки опит се пази в профила ти, за да следиш напредъка си.",
-    },
-];
-
 export default function Steps() {
-    const [ref, seen] = useInView<HTMLOListElement>(0.3);
+    const steps = [
+        {
+            num: "01",
+            title: "Избери етап и реален изпитен модул",
+            desc: "Всички тестове са структурирани по официалните програми на МОН за 4., 7., 10. и 12. клас с реален таймер и справочни формули.",
+            tag: "Симулация на изпит",
+        },
+        {
+            num: "02",
+            title: "Решавай в чиста среда без разсейване",
+            desc: "Висококонтрастен интерфейс с вградена дигитална чернова, маркиране на въпроси за преглед и бърза навигация с клавиатура.",
+            tag: "Фокус режим",
+        },
+        {
+            num: "03",
+            title: "Анализирай грешките и слабите си теми",
+            desc: "Получаваш приравнена оценка по МОН, разбивка по учебни теми и разписано решение стъпка по стъпка за всяка задача.",
+            tag: "Персонална аналитика",
+        },
+    ];
 
     return (
-        <ol ref={ref} className="relative grid gap-10 md:grid-cols-3 md:gap-8">
-            {/* Линия между стъпките — расте отляво надясно, когато секцията се покаже */}
-            <span
-                aria-hidden="true"
-                className="pointer-events-none absolute left-[2.1rem] right-[calc(33.333%-55px)] top-[calc(2.1rem-1.5px)] hidden h-[3px] origin-left rounded-full bg-cobalt md:block"
-                style={{
-                    transform: seen ? "scaleX(1)" : "scaleX(0)",
-                    transition: "transform 1.5s cubic-bezier(0.6,0.05,0.3,1) 0.3s",
-                }}
-            />
-
-            {steps.map((s, i) => (
-                <li key={s.title} className="relative flex gap-5 md:flex-col md:gap-4">
-                    <span
-                        className={`relative z-10 grid h-[4.2rem] w-[4.2rem] shrink-0 place-items-center rounded-full border-[3px] border-ink bg-marker font-display text-2xl font-extrabold shadow-pop-sm transition-[transform,opacity] duration-500 ease-spring ${
-                            seen ? "scale-100 opacity-100" : "scale-50 opacity-0"
-                        }`}
-                        style={{ transitionDelay: `${0.25 + i * 0.4}s` }}
-                    >
-                        {i + 1}
-                    </span>
+        <div className="grid gap-6 md:grid-cols-3">
+            {steps.map((s) => (
+                <div
+                    key={s.num}
+                    className="relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-[#F8FAFC] p-7 transition-all hover:border-slate-300 hover:bg-white hover:shadow-lg"
+                >
                     <div>
-                        <h3 className="mb-2 font-display text-xl font-bold leading-snug">{s.title}</h3>
-                        <p className="max-w-sm text-[1.02rem] leading-relaxed text-ink-soft">{s.text}</p>
+                        <div className="flex items-center justify-between">
+                            <span className="rounded-lg bg-blue-50 px-2.5 py-1 font-display text-xs font-bold text-blue-700">
+                                {s.tag}
+                            </span>
+                            <span className="font-display text-2xl font-black tracking-tighter text-slate-300">
+                                {s.num}
+                            </span>
+                        </div>
+                        <h3 className="mt-5 font-display text-lg font-extrabold leading-snug text-slate-950">
+                            {s.title}
+                        </h3>
+                        <p className="mt-2.5 text-sm leading-relaxed text-slate-600">
+                            {s.desc}
+                        </p>
                     </div>
-                </li>
+                </div>
             ))}
-        </ol>
+        </div>
     );
 }

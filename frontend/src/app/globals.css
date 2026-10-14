@@ -1,35 +1,47 @@
 @import "tailwindcss";
 
 /* ============================================================
-   bgнаучи — тетрадка на квадратчета
-   Палитра: мастилено синьо, кобалт, маркер, червен химикал
+   bgнаучи — SWISS PRECISION EDTECH DESIGN SYSTEM
+   Чиста архитектура, висок контраст, нула визуален шум.
    ============================================================ */
 @theme {
-  --color-paper: #F6F8FF;
-  --color-paper-deep: #E8EDFF;
-  --color-grid: #DCE4FC;
-  --color-ink: #14213D;
-  --color-ink-soft: #4A5578;
-  --color-cobalt: #2B50E6;
-  --color-cobalt-deep: #1E3BB8;
-  --color-cobalt-tint: #E4EAFF;
-  --color-marker: #FFD93D;
-  --color-marker-deep: #F2C200;
-  --color-marker-tint: #FFF4BF;
-  --color-pen: #C92A43;
-  --color-pen-tint: #FFE3E8;
-  --color-ok: #0B7A52;
-  --color-ok-tint: #D8F5E8;
+  /* Висококонтрастна светла система */
+  --color-paper: #F4F6F9;
+  --color-paper-deep: #E8ECF2;
+  --color-grid: transparent;
 
-  --font-display: "Geologica", "Segoe UI", system-ui, sans-serif;
-  --font-text: "Literata", Georgia, "Times New Roman", serif;
-  --font-hand: "Caveat", "Segoe Script", "Bradley Hand", cursive;
+  /* Дълбок обсидиан за кристална четимост */
+  --color-ink: #090D16;
+  --color-ink-soft: #475569;
+  --color-ink-muted: #94A3B8;
 
-  --shadow-pop-sm: 2px 2px 0 0 var(--color-ink);
-  --shadow-pop: 4px 4px 0 0 var(--color-ink);
-  --shadow-pop-lg: 7px 7px 0 0 var(--color-ink);
+  /* Електриково индиго — основен премиум акцент */
+  --color-cobalt: #2563EB;
+  --color-cobalt-deep: #1D4ED8;
+  --color-cobalt-tint: #EFF6FF;
 
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Заменяме старото жълто с наситен арктически акцент за обратна съвместимост */
+  --color-marker: #2563EB;
+  --color-marker-deep: #1E40AF;
+  --color-marker-tint: #EFF6FF;
+
+  /* Семантични цветове с висок контраст */
+  --color-pen: #DC2626;
+  --color-pen-tint: #FEF2F2;
+  --color-ok: #059669;
+  --color-ok-tint: #ECFDF5;
+
+  /* Модерна геометрична типография */
+  --font-display: "Geologica", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-text: "Geologica", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-hand: "Geologica", sans-serif;
+
+  /* Многослойни архитектурни сенки вместо черни комикс рамки */
+  --shadow-pop-sm: 0 1px 2px rgba(9, 13, 22, 0.05), 0 0 0 1px rgba(9, 13, 22, 0.08);
+  --shadow-pop: 0 4px 20px -2px rgba(9, 13, 22, 0.06), 0 1px 3px rgba(9, 13, 22, 0.04), 0 0 0 1px rgba(9, 13, 22, 0.07);
+  --shadow-pop-lg: 0 20px 38px -10px rgba(9, 13, 22, 0.12), 0 4px 12px rgba(9, 13, 22, 0.05), 0 0 0 1px rgba(37, 99, 235, 0.25);
+
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ---------- База ---------- */
@@ -37,341 +49,380 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     font-family: var(--font-text);
     color: var(--color-ink);
     background-color: var(--color-paper);
-    /* квадратчета като в тетрадка */
-    background-image:
-      linear-gradient(var(--color-grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
-    background-size: 32px 32px;
+    /* Нежен радиален светлинен градиент горе — БЕЗ квадратчета */
+    background-image: radial-gradient(1200px circle at 50% -150px, #FFFFFF 0%, #F4F6F9 75%);
+    background-attachment: fixed;
     min-height: 100vh;
     line-height: 1.6;
+    letter-spacing: -0.011em;
   }
 
   ::selection {
-    background: var(--color-marker);
-    color: var(--color-ink);
+    background: #2563EB;
+    color: #FFFFFF;
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-cobalt);
-    outline-offset: 3px;
-    border-radius: 6px;
+    outline: 2px solid var(--color-cobalt);
+    outline-offset: 2px;
+    border-radius: 10px;
   }
 
-  button { cursor: pointer; }
-  button:disabled { cursor: not-allowed; }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  .katex {
+    font-size: 1.08em;
+    color: var(--color-ink);
+  }
 }
 
-/* ---------- Компоненти ---------- */
+/* ---------- Премиум Компоненти ---------- */
 @layer components {
-  /* Бутон: твърда сянка, която се "натиска" */
+  /* Основен бутон: Обсидианов с 3D вътрешен отблясък */
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
     font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 0.95rem;
+    font-weight: 600;
+    font-size: 0.925rem;
     line-height: 1.2;
-    color: var(--color-ink);
-    background: var(--color-marker);
-    border: 2px solid var(--color-ink);
-    border-radius: 14px;
-    padding: 0.8rem 1.4rem;
-    box-shadow: var(--shadow-pop);
-    transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease, background-color 0.2s ease;
+    letter-spacing: -0.01em;
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #1E293B 0%, #090D16 100%);
+    border: 1px solid #090D16;
+    border-radius: 12px;
+    padding: 0.78rem 1.4rem;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 2px 4px rgba(9, 13, 22, 0.12),
+      0 1px 2px rgba(9, 13, 22, 0.08);
+    transition: all 0.2s var(--ease-spring);
     text-decoration: none;
   }
   .btn:hover:not(:disabled) {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 0 var(--color-ink);
+    background: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+    border-color: #1D4ED8;
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 8px 20px -4px rgba(37, 99, 235, 0.45);
   }
   .btn:active:not(:disabled) {
-    transform: translate(4px, 4px);
-    box-shadow: 0 0 0 0 var(--color-ink);
-    transition-duration: 0.06s;
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
   }
   .btn:disabled {
-    opacity: 0.45;
+    opacity: 0.4;
     box-shadow: none;
     transform: none;
   }
-  .btn-white { background: #fff; }
-  .btn-blue { background: var(--color-cobalt); color: #fff; }
-  .btn-sm { font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 12px; box-shadow: var(--shadow-pop-sm); }
-  .btn-sm:hover:not(:disabled) { box-shadow: 4px 4px 0 0 var(--color-ink); }
 
-  /* Лист хартия */
-  .sheet {
-    background: #fff;
-    border: 2px solid var(--color-ink);
-    border-radius: 20px;
-    box-shadow: var(--shadow-pop);
+  /* Вторичен светъл бутон с висок контраст */
+  .btn-white {
+    background: #FFFFFF;
+    color: var(--color-ink);
+    border: 1px solid #CBD5E1;
+    box-shadow: 0 1px 2px rgba(9, 13, 22, 0.04);
+  }
+  .btn-white:hover:not(:disabled) {
+    background: #F8FAFC;
+    color: var(--color-ink);
+    border-color: #090D16;
+    box-shadow: 0 4px 12px rgba(9, 13, 22, 0.08);
   }
 
-  /* Поле за въвеждане */
+  /* Акцентен син бутон */
+  .btn-blue {
+    background: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+    color: #FFFFFF;
+    border: 1px solid #1D4ED8;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 4px 14px rgba(37, 99, 235, 0.35);
+  }
+  .btn-blue:hover:not(:disabled) {
+    background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+    box-shadow: 0 8px 22px rgba(37, 99, 235, 0.45);
+  }
+
+  .btn-sm {
+    font-size: 0.825rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+  }
+
+  /* Основна архитектурна карта (Bento Card) */
+  .sheet {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
+    box-shadow:
+      0 1px 3px rgba(9, 13, 22, 0.03),
+      0 10px 30px -5px rgba(9, 13, 22, 0.05);
+  }
+
+  /* Инпут поле с фокус ореол */
   .field {
     width: 100%;
     font-family: var(--font-display);
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--color-ink);
-    background: #fff;
-    border: 2px solid var(--color-ink);
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
     border-radius: 12px;
     padding: 0.8rem 1rem;
-    transition: box-shadow 0.2s ease, transform 0.2s var(--ease-spring);
+    box-shadow: inset 0 1px 2px rgba(9, 13, 22, 0.03);
+    transition: all 0.2s ease;
   }
-  .field::placeholder { color: #7B86A8; }
+  .field::placeholder {
+    color: #94A3B8;
+  }
   .field:focus {
     outline: none;
-    box-shadow: 4px 4px 0 0 var(--color-cobalt);
-    transform: translate(-1px, -1px);
+    border-color: #2563EB;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
   }
 
-  /* Печат с номера на класа */
+  /* Индекс бадж за клас */
   .stamp {
     display: inline-grid;
     place-items: center;
-    width: 4.6rem;
-    height: 4.6rem;
+    width: 3.75rem;
+    height: 3.75rem;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 2rem;
+    font-size: 1.5rem;
     line-height: 1;
-    color: var(--color-ink);
-    background: var(--color-marker);
-    border: 3px solid var(--color-ink);
-    border-radius: 9999px;
-    box-shadow: var(--shadow-pop-sm);
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%);
+    border-radius: 16px;
+    box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.4);
   }
 
-  /* Корица на тетрадка (предмет) */
+  /* Модерна карта за предмет (заменя старата тетрадка със спирала) */
   .notebook {
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 1.5rem;
-    min-height: 11.5rem;
+    gap: 1.25rem;
+    min-height: 11rem;
     height: 100%;
-    padding: 1.3rem 1.3rem 1.3rem 3rem;
+    padding: 1.5rem;
     color: var(--color-ink);
-    background: var(--t, var(--color-cobalt-tint));
-    border: 2px solid var(--color-ink);
-    border-radius: 6px 18px 18px 6px;
-    box-shadow: var(--shadow-pop);
-    transform-origin: left center;
-    transition: transform 0.35s var(--ease-spring), box-shadow 0.3s ease;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px -2px rgba(9, 13, 22, 0.05);
+    transition: all 0.25s var(--ease-spring);
     text-decoration: none;
+    overflow: hidden;
   }
-  .notebook::before { /* гръбче */
+  .notebook::before {
     content: "";
     position: absolute;
-    inset: 0 auto 0 0;
-    width: 1.9rem;
-    background: var(--c, var(--color-cobalt));
-    border-right: 2px solid var(--color-ink);
-    border-radius: 4px 0 0 4px;
-  }
-  .notebook::after { /* дупки на спиралата */
-    content: "";
-    position: absolute;
-    left: 0.45rem;
-    top: 0.55rem;
-    bottom: 0.3rem;
-    width: 1rem;
-    background: radial-gradient(circle at 50% 50%, var(--color-paper) 0 0.2rem, var(--color-ink) 0.2rem calc(0.2rem + 2px), transparent calc(0.2rem + 2px)) 0 0 / 100% 1.7rem repeat-y;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--c, #2563EB);
   }
   .notebook:hover {
-    transform: perspective(800px) rotateY(-9deg) translate(-2px, -5px);
-    box-shadow: 9px 9px 0 0 var(--color-ink);
-  }
-  .notebook:active {
-    transform: perspective(800px) rotateY(-3deg) translate(3px, 3px);
-    box-shadow: 1px 1px 0 0 var(--color-ink);
-    transition-duration: 0.08s;
+    transform: translateY(-4px);
+    border-color: #2563EB;
+    box-shadow: 0 16px 32px -8px rgba(37, 99, 235, 0.15);
   }
 
-  /* Билет за изпит */
+  /* Карта за изпитен тест (заменя стария перфориран билет) */
   .ticket {
     position: relative;
     display: grid;
     grid-template-columns: 1fr auto;
+    align-items: center;
     color: var(--color-ink);
-    background: #fff;
-    border: 2px solid var(--color-ink);
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
     border-radius: 16px;
-    box-shadow: var(--shadow-pop);
-    transition: transform 0.3s var(--ease-spring), box-shadow 0.25s ease;
+    box-shadow: 0 2px 10px rgba(9, 13, 22, 0.03);
+    transition: all 0.22s var(--ease-spring);
     text-decoration: none;
+    overflow: hidden;
   }
-  .ticket::before,
-  .ticket::after { /* изрязвания на перфорацията */
-    content: "";
-    position: absolute;
-    right: calc(7.5rem - 0.65rem);
-    width: 1.3rem;
-    height: 0.65rem;
-    background: var(--color-paper);
-    border: 2px solid var(--color-ink);
-  }
-  .ticket::before { top: -2px; border-top: 0; border-radius: 0 0 1.3rem 1.3rem; }
-  .ticket::after { bottom: -2px; border-bottom: 0; border-radius: 1.3rem 1.3rem 0 0; }
   .ticket .stub {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
+    height: 100%;
     width: 7.5rem;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 0.9rem;
-    background: var(--color-marker-tint);
-    border-left: 2px dashed var(--color-ink);
-    border-radius: 0 14px 14px 0;
-    transition: background-color 0.25s ease;
+    font-size: 0.85rem;
+    color: #2563EB;
+    background: #F8FAFC;
+    border-left: 1px solid #E2E8F0;
+    transition: all 0.22s ease;
   }
-  .ticket .stub .arrow { transition: transform 0.3s var(--ease-spring); }
+  .ticket .stub .arrow {
+    transition: transform 0.25s var(--ease-spring);
+  }
   .ticket:hover {
-    transform: translate(-3px, -4px) rotate(-0.4deg);
-    box-shadow: var(--shadow-pop-lg);
+    transform: translateY(-2px);
+    border-color: #2563EB;
+    box-shadow: 0 12px 24px -6px rgba(37, 99, 235, 0.14);
   }
-  .ticket:hover .stub { background: var(--color-marker); }
-  .ticket:hover .stub .arrow { transform: translateX(6px); }
-  .ticket:active {
-    transform: translate(3px, 3px);
-    box-shadow: 0 0 0 0 var(--color-ink);
-    transition-duration: 0.06s;
+  .ticket:hover .stub {
+    background: #2563EB;
+    color: #FFFFFF;
+  }
+  .ticket:hover .stub .arrow {
+    transform: translateX(4px);
   }
 }
 
 /* ============================================================
-   Анимации
+   Анимации (Плавни и прецизни, без наклонени елементи)
    ============================================================ */
-
-/* Тетрадките "падат" върху бюрото — само при пристигане на страницата */
 @keyframes drop-in {
-  from { opacity: 0; transform: translateY(-34px) rotate(var(--r, -3deg)) scale(0.94); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .drop-in {
-  animation: drop-in 0.75s var(--ease-spring) backwards;
-  animation-delay: calc(var(--i, 0) * 70ms + 80ms);
+  animation: drop-in 0.45s var(--ease-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 50ms);
 }
 
-/* Печат: пристига отгоре и "удря" хартията */
-@keyframes stamp-in {
-  0% { opacity: 0; transform: scale(2.2) rotate(-18deg); }
-  60% { opacity: 1; transform: scale(0.94) rotate(3deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
-}
-.stamp-in { animation: stamp-in 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; animation-delay: 0.1s; }
-
-/* Страница на тест: обръщане напред / назад */
 @keyframes turn-next {
-  from { opacity: 0; transform: translateX(56px) rotate(1.8deg); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 @keyframes turn-prev {
-  from { opacity: 0; transform: translateX(-56px) rotate(-1.8deg); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
-.turn-next { animation: turn-next 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
-.turn-prev { animation: turn-prev 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
+.turn-next {
+  animation: turn-next 0.28s var(--ease-spring) backwards;
+}
+.turn-prev {
+  animation: turn-prev 0.28s var(--ease-spring) backwards;
+}
 
-/* Линия, нарисувана с химикал (елементът трябва да има pathLength="1") */
-@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 .draw {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: draw var(--dur, 0.5s) cubic-bezier(0.6, 0.05, 0.3, 1) var(--delay, 0s) forwards;
+  animation: draw var(--dur, 0.4s) ease-out var(--delay, 0s) forwards;
 }
 
-/* Вълна около станция, когато химикалът стигне до нея */
-@keyframes ripple {
-  from { opacity: 0.7; transform: scale(1); }
-  to { opacity: 0; transform: scale(2.1); }
-}
-.ripple { animation: ripple 0.9s ease-out forwards; }
-
-/* Грешка във форма: разклащане */
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-7px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(3px); }
-}
-.shake { animation: shake 0.45s ease-in-out; }
-
-/* Малко подскачане за елементи, които се появяват при действие */
 @keyframes pop {
-  from { opacity: 0; transform: scale(0.6) rotate(-8deg); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
-.pop { animation: pop 0.45s var(--ease-spring) backwards; animation-delay: var(--delay, 0s); }
+.pop {
+  animation: pop 0.35s var(--ease-spring) backwards;
+}
 
-/* Конфети */
 @keyframes confetti {
-  0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(0.5); }
-  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1); }
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1);
+  }
 }
 .confetti-bit {
   position: absolute;
   left: 50%;
   top: 38%;
-  width: 0.55rem;
-  height: 0.95rem;
+  width: 0.5rem;
+  height: 0.9rem;
   border-radius: 2px;
   opacity: 0;
-  animation: confetti 1.7s cubic-bezier(0.15, 0.7, 0.3, 1) var(--delay, 0s) forwards;
+  animation: confetti 1.6s cubic-bezier(0.15, 0.7, 0.3, 1) var(--delay, 0s) forwards;
 }
 
-/* Индикатор за зареждане: драсканица */
-@keyframes scribble {
-  0% { stroke-dashoffset: 1; }
-  50% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -1; }
-}
-.scribble { stroke-dasharray: 1; animation: scribble 1.5s ease-in-out infinite; }
-
-/* Молив, който пише, докато проверяваме */
-@keyframes write {
-  0%, 100% { transform: translateX(0) rotate(0); }
-  25% { transform: translateX(3px) rotate(8deg); }
-  75% { transform: translateX(-3px) rotate(-6deg); }
-}
-.writing { animation: write 0.5s ease-in-out infinite; }
-
-/* Маркер, който се плъзга под текст при hover */
 .marker-line {
-  background-image: linear-gradient(var(--color-marker), var(--color-marker));
-  background-repeat: no-repeat;
-  background-position: 0 88%;
-  background-size: 0% 38%;
-  transition: background-size 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+  position: relative;
+  transition: color 0.2s ease;
 }
-.marker-line:hover,
-.marker-line:focus-visible { background-size: 100% 38%; }
+.marker-line:hover {
+  color: var(--color-cobalt);
+}
+/* ============================================================
+   Мобилна адаптивност (Responsive Mobile Polish)
+   ============================================================ */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
 
-/* ---------- Намалено движение ---------- */
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    animation-delay: 0s !important;
-    transition-duration: 0.001ms !important;
+/* Дългите математически формули се скролват плавно вътре в картата, без да чупят екрана на телефона */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .sheet {
+    border-radius: 16px;
   }
-  .draw { stroke-dashoffset: 0; }
-  .scribble { stroke-dashoffset: 0; }
+
+  .btn {
+    padding: 0.7rem 1.1rem;
+    font-size: 0.88rem;
+    border-radius: 11px;
+  }
+
+  .katex {
+    font-size: 1em;
+  }
 }

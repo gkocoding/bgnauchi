@@ -41,12 +41,20 @@ export default function TeacherPage() {
         }
     };
 
-    useEffect(() => {
+useEffect(() => {
         if (!isLoggedIn()) {
             router.push("/login?next=/teacher");
             return;
         }
-        loadDashboard();
+        apiFetch("/api/auth/me/")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((me) => {
+                if (me?.role !== "teacher") {
+                    router.push("/profile");
+                } else {
+                    loadDashboard();
+                }
+            });
     }, [router]);
 
     async function createHomework(e: React.FormEvent) {

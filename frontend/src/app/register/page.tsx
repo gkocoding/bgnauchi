@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { register, login } from "@/lib/auth";
@@ -17,6 +17,10 @@ export default function RegisterPage() {
     const [error, setError] = useState<string | null>(null);
     const [errorCount, setErrorCount] = useState(0);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        document.title = "bgнаучи | Регистрация";
+    }, []);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -110,7 +114,7 @@ export default function RegisterPage() {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((s) => !s)}
-                                className="marker-line absolute right-3 top-1/2 -translate-y-1/2 font-display text-sm font-semibold text-ink-soft hover:text-ink"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 font-display text-sm font-semibold text-ink-soft hover:text-ink bg-transparent border-none cursor-pointer"
                             >
                                 {showPassword ? "Скрий" : "Покажи"}
                             </button>

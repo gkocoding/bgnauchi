@@ -2,26 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import "katex/dist/katex.min.css";
-import { InlineMath } from "react-katex";
 import Nav from "@/components/Nav";
+import MathText from "@/components/MathText";
 import { apiFetch } from "@/lib/api";
 import { isLoggedIn } from "@/lib/auth";
 
-function renderMath(text: string) {
-    if (!text) return null;
-    const parts = text.split(/(\\[a-zA-Z]+(?:\{[^{}]*\})*)/g);
-    return parts.map((part, idx) => {
-        if (part.startsWith("\\")) {
-            try {
-                return <InlineMath key={idx} math={part} />;
-            } catch {
-                return <span key={idx}>{part}</span>;
-            }
-        }
-        return <span key={idx}>{part}</span>;
-    });
-}
+const optionLetter: Record<string, string> = { a: "А", b: "Б", c: "В", d: "Г" };
 
 export default function DuelPage() {
     const router = useRouter();
@@ -49,8 +35,7 @@ export default function DuelPage() {
                 body: JSON.stringify({ grade }),
             });
             if (!res.ok) {
-                const errText = await res.text();
-                setErrorMsg(`Грешка от сървъра (${res.status}): Провери дали си пуснал миграциите и urls.py. ${errText.slice(0, 120)}`);
+                setErrorMsg("Неуспешно създаване на дуел.");
                 setBusy(false);
                 return;
             }
@@ -97,50 +82,68 @@ export default function DuelPage() {
     return (
         <>
             <Nav />
-            <main className="mx-auto max-w-3xl px-5 pb-24 pt-4">
-                <h1 className="font-display text-4xl font-extrabold tracking-tight">⚔️ 1v1 Дуел с приятел</h1>
-                <p className="mt-2 mb-8 font-hand text-[1.7rem] font-semibold text-cobalt-deep">
-                    5 бързи въпроса — побеждава по-точният и по-бързият!
-                </p>
+            <main className="mx-auto max-w-3xl px-5 pb-24 pt-6">
+                <header className="mb-8">
+                    <span className="font-display text-xs font-bold uppercase tracking-wider text-blue-600">
+                        Състезателен режим в реално време
+                    </span>
+                    <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+                        ⚔️ 1v1 Дуел с приятел
+                    </h1>
+                    <p className="mt-1 text-base text-slate-600">
+                        Решете едни и същи 5 задачи за време и точност.
+                    </p>
+                </header>
 
                 {errorMsg && (
-                    <div className="sheet mb-6 border-pen bg-pen-tint p-4 font-display text-sm font-bold text-pen">
+                    <div className="sheet mb-6 border-red-300 bg-red-50 p-4 font-display text-sm font-bold text-red-700">
                         ⚠️ {errorMsg}
                     </div>
                 )}
 
                 {!duelData ? (
                     <div className="grid gap-6 sm:grid-cols-2">
-                        <div className="sheet bg-[#FFF4BF] p-6">
-                            <h2 className="mb-3 font-display text-xl font-extrabold">Създай нов дуел</h2>
-                            <label className="mb-2 block font-display text-xs font-bold">Избери клас:</label>
-                            <div className="mb-5 flex gap-2">
+                        <div className="sheet p-6 sm:p-7">
+                            <h2 className="mb-2 font-display text-xl font-extrabold text-slate-950">
+                                Създай нов дуел
+                            </h2>
+                            <p className="mb-4 text-xs text-slate-500">
+                                Избери клас и изпрати генерирания код на приятел.
+                            </p>
+                            <div className="mb-6 flex gap-2">
                                 {[4, 7, 10, 12].map((g) => (
                                     <button
                                         key={g}
                                         type="button"
                                         onClick={() => setGrade(g)}
-                                        className={`flex-1 rounded-xl border-2 border-ink py-2 font-display font-extrabold ${
-                                            grade === g ? "bg-cobalt text-white" : "bg-white"
+                                        className={`flex-1 rounded-xl border py-2.5 font-display text-sm font-extrabold transition ${
+                                            grade === g
+                                                ? "border-blue-600 bg-blue-600 text-white shadow-xs"
+                                                : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-900"
                                         }`}
                                     >
-                                        {g}.
+                                        {g}. клас
                                     </button>
                                 ))}
                             </div>
                             <button type="button" onClick={createDuel} disabled={busy} className="btn w-full">
-                                {busy ? "Създаване..." : "Генерирай код за дуел"}
+                                {busy ? "Генериране..." : "Генерирай код за дуел"}
                             </button>
                         </div>
 
-                        <div className="sheet p-6">
-                            <h2 className="mb-3 font-display text-xl font-extrabold">Влез с код от приятел</h2>
+                        <div className="sheet p-6 sm:p-7">
+                            <h2 className="mb-2 font-display text-xl font-extrabold text-slate-950">
+                                Влез с код от приятел
+                            </h2>
+                            <p className="mb-4 text-xs text-slate-500">
+                                Въведи 6-символния код, който ти е изпратен.
+                            </p>
                             <input
                                 type="text"
-                                placeholder="Въведи 6-цифрен код..."
+                                placeholder="КОД (напр. 8F4K2A)"
                                 value={joinCode}
                                 onChange={(e) => setJoinCode(e.target.value)}
-                                className="mb-4 w-full rounded-xl border-2 border-ink bg-paper px-4 py-2.5 font-display font-bold uppercase"
+                                className="field mb-4 font-bold uppercase tracking-widest"
                             />
                             <button
                                 type="button"
@@ -154,42 +157,48 @@ export default function DuelPage() {
                     </div>
                 ) : (
                     <div className="sheet p-6 sm:p-8">
-                        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-ink bg-[#E4EAFF] p-4">
+                        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
                             <div>
-                                <p className="font-display text-xs font-bold text-ink-soft">КОД ЗА ПРИЯТЕЛ:</p>
-                                <p className="font-display text-2xl font-extrabold tracking-widest">{duelData.code}</p>
+                                <p className="font-display text-[11px] font-bold uppercase text-blue-700">
+                                    Код за покана на приятел
+                                </p>
+                                <p className="font-display text-2xl font-black tracking-widest text-slate-950">
+                                    {duelData.code}
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => navigator.clipboard.writeText(duelData.code)}
-                                className="btn btn-sm btn-white"
+                                className="btn btn-white btn-sm"
                             >
-                                📋 Копирай кода
+                                Копирай кода
                             </button>
                         </div>
 
                         {result ? (
                             <div className="py-6 text-center">
-                                <p className="font-hand text-5xl font-bold text-cobalt-deep">
+                                <p className="font-display text-3xl font-extrabold text-slate-950">
                                     Твоят резултат: {result.score} / {result.total}
                                 </p>
                                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                                    <div className="rounded-2xl border-2 border-ink bg-[#FFF4BF] p-4">
-                                        <p className="font-display text-xs font-bold">Създател ({duelData.creator})</p>
-                                        <p className="font-display text-2xl font-extrabold">
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                                        <p className="font-display text-xs font-bold text-slate-500">
+                                            Създател ({duelData.creator})
+                                        </p>
+                                        <p className="mt-1 font-display text-2xl font-black text-slate-950">
                                             {result.creator_score !== null ? `${result.creator_score} т.` : "Още решава..."}
                                         </p>
                                     </div>
-                                    <div className="rounded-2xl border-2 border-ink bg-[#D8F5E8] p-4">
-                                        <p className="font-display text-xs font-bold">Опонент</p>
-                                        <p className="font-display text-2xl font-extrabold">
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                                        <p className="font-display text-xs font-bold text-slate-500">Опонент</p>
+                                        <p className="mt-1 font-display text-2xl font-black text-blue-600">
                                             {result.opponent_score !== null ? `${result.opponent_score} т.` : "Очаква се приятел..."}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="mt-6 flex justify-center gap-3">
                                     <button type="button" onClick={() => loadDuel(duelData.code)} className="btn btn-white">
-                                        🔄 Обнови резултата
+                                        Обнови резултата
                                     </button>
                                     <button type="button" onClick={() => setDuelData(null)} className="btn">
                                         Нов дуел
@@ -199,23 +208,38 @@ export default function DuelPage() {
                         ) : (
                             <div className="space-y-6">
                                 {duelData.questions.map((q: any, i: number) => (
-                                    <div key={q.id} className="rounded-2xl border-2 border-ink bg-white p-5">
-                                        <p className="mb-3 font-display font-bold">
-                                            {i + 1}. {renderMath(q.text)}
+                                    <div key={q.id} className="rounded-xl border border-slate-200 bg-white p-5">
+                                        <p className="mb-4 text-lg font-bold text-slate-950">
+                                            <span className="mr-2 text-blue-600">{i + 1}.</span>
+                                            <MathText text={q.text} />
                                         </p>
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                            {(["a", "b", "c", "d"] as const).map((opt) => (
-                                                <button
-                                                    key={opt}
-                                                    type="button"
-                                                    onClick={() => setAnswers((p) => ({ ...p, [String(q.id)]: opt }))}
-                                                    className={`rounded-xl border-2 border-ink px-3 py-2 text-left font-display text-sm font-semibold ${
-                                                        answers[String(q.id)] === opt ? "bg-cobalt text-white" : "bg-paper"
-                                                    }`}
-                                                >
-                                                    {opt.toUpperCase()}) {renderMath(q[`option_${opt}`])}
-                                                </button>
-                                            ))}
+                                        <div className="grid gap-2.5 sm:grid-cols-2">
+                                            {(["a", "b", "c", "d"] as const).map((opt) => {
+                                                const sel = answers[String(q.id)] === opt;
+                                                return (
+                                                    <button
+                                                        key={opt}
+                                                        type="button"
+                                                        onClick={() => setAnswers((p) => ({ ...p, [String(q.id)]: opt }))}
+                                                        className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left font-display text-sm font-semibold transition ${
+                                                            sel
+                                                                ? "border-blue-600 bg-blue-50 text-blue-950 ring-2 ring-blue-600/20"
+                                                                : "border-slate-200 bg-slate-50/60 text-slate-800 hover:border-slate-900"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-extrabold ${
+                                                                sel ? "bg-blue-600 text-white" : "bg-white text-slate-700"
+                                                            }`}
+                                                        >
+                                                            {optionLetter[opt]}
+                                                        </span>
+                                                        <span className="flex-1">
+                                                            <MathText text={q[`option_${opt}`]} />
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 ))}

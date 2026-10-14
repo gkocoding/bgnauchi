@@ -55,7 +55,7 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <div>
+<div>
                         <label htmlFor="password" className="mb-1.5 block font-display text-sm font-semibold">
                             Парола
                         </label>
@@ -72,7 +72,7 @@ export default function LoginPage() {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((s) => !s)}
-                                className="marker-line absolute right-3 top-1/2 -translate-y-1/2 font-display text-sm font-semibold text-ink-soft hover:text-ink"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 font-display text-sm font-semibold text-ink-soft hover:text-ink bg-transparent border-none cursor-pointer"
                             >
                                 {showPassword ? "Скрий" : "Покажи"}
                             </button>

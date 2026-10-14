@@ -85,7 +85,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+# В serializers.py замени UserSerializer с този код:
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+    school_name = serializers.SerializerMethodField()
+    city = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'username', 'email', 'role', 'school_name', 'city']
+
+    def get_role(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile:
+            return profile.role
+        if obj.is_staff or obj.is_superuser:
+            return 'teacher'
+        return 'student'
+
+    def get_school_name(self, obj):
+        profile = getattr(obj, 'profile', None)
+        return profile.school_name if profile else ""
+
+    def get_city(self, obj):
+        profile = getattr(obj, 'profile', None)
+        return profile.city if profile else ""

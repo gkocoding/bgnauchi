@@ -1,25 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import "katex/dist/katex.min.css";
-import { InlineMath } from "react-katex";
+import MathText from "@/components/MathText";
 
 const optionLetter: Record<string, string> = { a: "А", b: "Б", c: "В", d: "Г" };
-
-function renderMathText(text: string) {
-    if (!text) return null;
-    const parts = text.split(/(\\[a-zA-Z]+(?:\{[^{}]*\})*)/g);
-    return parts.map((part, idx) => {
-        if (part.startsWith("\\")) {
-            try {
-                return <InlineMath key={idx} math={part} />;
-            } catch {
-                return <span key={idx}>{part}</span>;
-            }
-        }
-        return <span key={idx}>{part}</span>;
-    });
-}
 
 export default function DailyChallenge() {
     const [data, setData] = useState<any | null>(null);
@@ -58,30 +42,30 @@ export default function DailyChallenge() {
 
     return (
         <section className="mx-auto max-w-6xl px-5 pb-16">
-            <div className="sheet bg-[#FFF4BF] p-6 sm:p-9">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <span className="rounded-full border-2 border-ink bg-white px-3.5 py-1 font-display text-xs font-extrabold uppercase">
+            <div className="sheet p-6 sm:p-9">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <span className="rounded-lg bg-blue-50 px-3 py-1 font-display text-xs font-extrabold uppercase text-blue-700">
                         🔥 Задача на деня • {data.grade}. клас
                     </span>
                     {q.topic && (
-                        <span className="font-display text-xs font-bold text-ink-soft">
+                        <span className="font-display text-xs font-bold text-slate-500">
                             Тема: {q.topic}
                         </span>
                     )}
                 </div>
 
-                <p className="mb-6 text-xl font-bold leading-snug sm:text-2xl">
-                    {renderMathText(q.text)}
-                </p>
+                <div className="mb-6 text-xl font-bold leading-relaxed text-slate-950 sm:text-2xl">
+                    <MathText text={q.text} />
+                </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3.5 sm:grid-cols-2">
                     {(["a", "b", "c", "d"] as const).map((key) => {
                         const isChosen = selected === key;
                         const isCorrect = checkRes?.correct_option === key;
-                        let style = "border-ink bg-white hover:-translate-y-0.5";
+                        let style = "border-slate-200 bg-white hover:border-slate-900 hover:bg-slate-50";
                         if (checkRes) {
-                            if (isCorrect) style = "border-ok bg-ok-tint";
-                            else if (isChosen) style = "border-pen bg-pen-tint";
+                            if (isCorrect) style = "border-emerald-600 bg-emerald-50/80 text-emerald-950";
+                            else if (isChosen) style = "border-red-500 bg-red-50/80 text-red-950";
                         }
 
                         return (
@@ -89,28 +73,39 @@ export default function DailyChallenge() {
                                 key={key}
                                 type="button"
                                 onClick={() => handleSelect(key)}
-                                className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left font-display font-semibold transition ${style}`}
+                                className={`flex items-center gap-3.5 rounded-xl border p-4 text-left font-display font-semibold transition ${style}`}
                             >
-                                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-ink bg-paper text-sm font-extrabold">
+                                <span
+                                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-extrabold ${
+                                        checkRes && isCorrect
+                                            ? "bg-emerald-600 text-white"
+                                            : checkRes && isChosen
+                                            ? "bg-red-600 text-white"
+                                            : "bg-slate-100 text-slate-800"
+                                    }`}
+                                >
                                     {optionLetter[key]}
                                 </span>
-                                <span className="flex-1">{renderMathText(q[`option_${key}`])}</span>
+                                <span className="flex-1 text-base">
+                                    <MathText text={q[`option_${key}`]} />
+                                </span>
                             </button>
                         );
                     })}
                 </div>
 
                 {checkRes && (
-                    <div className="mt-5 rounded-2xl border-2 border-ink bg-white p-4">
-                        <p className={`font-display text-base font-extrabold ${checkRes.is_correct ? "text-ok" : "text-pen"}`}>
+                    <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className={`font-display text-sm font-extrabold ${checkRes.is_correct ? "text-emerald-700" : "text-red-600"}`}>
                             {checkRes.is_correct
-                                ? "🎉 Браво! Верен отговор!"
-                                : `Грешен отговор. Верният е ${optionLetter[checkRes.correct_option]}.`}
+                                ? "✓ Верен отговор!"
+                                : `✕ Грешен отговор. Верният е ${optionLetter[checkRes.correct_option]}.`}
                         </p>
                         {checkRes.explanation && (
-                            <p className="mt-2 text-sm text-ink-soft">
-                                <strong>Решение:</strong> {renderMathText(checkRes.explanation)}
-                            </p>
+                            <div className="mt-2 text-sm leading-relaxed text-slate-700">
+                                <strong>Решение: </strong>
+                                <MathText text={checkRes.explanation} />
+                            </div>
                         )}
                     </div>
                 )}
