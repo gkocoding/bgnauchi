@@ -36,10 +36,41 @@ export default function Nav() {
     }
 
     return (
-        <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:py-6">
+        <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-5 sm:py-6">
             <Logo />
 
-            <nav className="flex items-center gap-2 sm:gap-3" aria-label="Основна навигация">
+            <nav className="flex flex-wrap items-center gap-2 sm:gap-4" aria-label="Основна навигация">
+                <Link
+                    href="/leaderboard"
+                    className="marker-line px-1 font-display text-sm font-semibold text-ink hover:text-cobalt-deep"
+                >
+                    🏆 Класация
+                </Link>
+                <Link
+                    href="/duel"
+                    className="marker-line px-1 font-display text-sm font-semibold text-ink hover:text-cobalt-deep"
+                >
+                    ⚔️ 1v1 Дуел
+                </Link>
+                <Link
+                    href="/homework"
+                    className="marker-line px-1 font-display text-sm font-semibold text-ink hover:text-cobalt-deep"
+                >
+                    📝 Домашно
+                </Link>
+                <Link
+                    href="/calculator"
+                    className="marker-line hidden px-1 font-display text-sm font-semibold text-ink hover:text-cobalt-deep sm:inline-block"
+                >
+                    🧮 Бал
+                </Link>
+                <Link
+                    href="/teacher"
+                    className="marker-line hidden px-1 font-display text-sm font-semibold text-ink hover:text-cobalt-deep md:inline-block"
+                >
+                    👩‍🏫 За учители
+                </Link>
+
                 {loggedIn ? (
                     <>
                         <Link

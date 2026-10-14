@@ -7,6 +7,13 @@ from .views import (
     RegisterView,
     MeView,
     MyAttemptsView,
+    ProfileAnalyticsView,
+    MistakeRepairExamView,
+    LeaderboardView,
+    DailyChallengeView,
+    DuelView,
+    TeacherDashboardView,
+    HomeworkPlayView,
 )
 from .auth_views import CustomTokenObtainPairView
 
@@ -20,4 +27,12 @@ urlpatterns = [
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/me/', MeView.as_view(), name='me'),
     path('attempts/', MyAttemptsView.as_view(), name='my-attempts'),
+    path('analytics/', ProfileAnalyticsView.as_view(), name='profile-analytics'),
+    path('mistakes-exam/', MistakeRepairExamView.as_view(), name='mistakes-exam'),
+    path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'),
+    path('daily-challenge/', DailyChallengeView.as_view(), name='daily-challenge'),
+    path('duels/', DuelView.as_view(), name='duel-create'),
+    path('duels/<str:code>/', DuelView.as_view(), name='duel-detail'),
+    path('teacher/dashboard/', TeacherDashboardView.as_view(), name='teacher-dashboard'),
+    path('homework/<str:code>/', HomeworkPlayView.as_view(), name='homework-play'),
 ] + router.urls

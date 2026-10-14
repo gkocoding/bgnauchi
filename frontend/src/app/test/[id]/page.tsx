@@ -19,6 +19,8 @@ type Question = {
     option_b: string;
     option_c: string;
     option_d: string;
+    topic?: string;
+    points?: number;
 };
 
 type Exam = {
@@ -26,17 +28,48 @@ type Exam = {
     title: string;
     grade: number;
     exam_type: string;
+    exam_label?: string;
+    duration_minutes?: number;
     questions: Question[];
 };
 
 type CheckResult = {
     score: number;
     total: number;
+    earned_points?: number;
+    max_points?: number;
+    mon_grade?: number;
     correct_answers: Record<string, string>;
+    explanations?: Record<string, string>;
 };
 
-// В базата отговорите са a/b/c/d, но в българските изпити се показват като А, Б, В, Г
 const optionLetter: Record<string, string> = { a: "А", b: "Б", c: "В", d: "Г" };
+
+const FORMULAS_BY_GRADE: Record<number, { title: string; math: string }[]> = {
+    4: [
+        { title: "Обиколка на правоъгълник", math: "P = 2 \\cdot a + 2 \\cdot b" },
+        { title: "Лице на правоъгълник", math: "S = a \\cdot b" },
+        { title: "Път, скорост и време", math: "S = v \\cdot t" },
+    ],
+    7: [
+        { title: "Квадрат на сбор/разлика", math: "(a \\pm b)^2 = a^2 \\pm 2ab + b^2" },
+        { title: "Разлика на квадрати", math: "a^2 - b^2 = (a - b)(a + b)" },
+        { title: "Куб на сбор/разлика", math: "(a \\pm b)^3 = a^3 \\pm 3a^2b + 3ab^2 \\pm b^3" },
+        { title: "Лице на триъгълник", math: "S = \\frac{a \\cdot h_a}{2}" },
+    ],
+    10: [
+        { title: "Квадратно уравнение", math: "D = b^2 - 4ac, \\quad x_{1,2} = \\frac{-b \\pm \\sqrt{D}}{2a}" },
+        { title: "Формули на Виет", math: "x_1 + x_2 = -\\frac{b}{a}, \\quad x_1 x_2 = \\frac{c}{a}" },
+        { title: "Косинусова теорема", math: "c^2 = a^2 + b^2 - 2ab\\cos\\gamma" },
+        { title: "Синусова теорема", math: "\\frac{a}{\\sin\\alpha} = \\frac{b}{\\sin\\beta} = 2R" },
+    ],
+    12: [
+        { title: "Логаритъм", math: "\\log_a(xy) = \\log_a x + \\log_a y" },
+        { title: "Производна на степен", math: "(x^n)' = n \\cdot x^{n-1}" },
+        { title: "Аритметична прогресия", math: "a_n = a_1 + (n-1)d, \\quad S_n = \\frac{a_1+a_n}{2}n" },
+        { title: "Геометрична прогресия", math: "a_n = a_1 \\cdot q^{n-1}, \\quad S_n = a_1\\frac{q^n-1}{q-1}" },
+    ],
+};
 
 function renderTextWithMath(text: string) {
     const nodes: React.ReactNode[] = [];
@@ -80,8 +113,6 @@ function renderTextWithMath(text: string) {
                 groupsRead++;
             }
 
-            // ВАЖНО: винаги render-ваме командата като математика, дори БЕЗ скоби -
-            // символи като \pi, \times, \neq, \infty, \cdot нямат нужда от {} след себе си.
             flushBuffer();
             try {
                 nodes.push(<InlineMath key={key++} math={mathExpr} />);
@@ -98,9 +129,6 @@ function renderTextWithMath(text: string) {
     return nodes;
 }
 
-/* ---------- Малки помощни компоненти ---------- */
-
-// Ръчно нарисуван кръг около буква (чертае се при показване)
 function PenCircle({ color, delay = 0 }: { color: string; delay?: number }) {
     return (
         <svg
@@ -242,21 +270,38 @@ function verdict(pct: number) {
     return "Преговори и опитай пак";
 }
 
-/* ---------- Страницата ---------- */
+function formatTime(sec: number) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 export default function TestPage() {
     const params = useParams();
     const router = useRouter();
     const examId = params.id as string;
+    const isMistakesMode = examId === "mistakes";
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [answers, setAnswers] = useState<Record<string, string>>({});
+    const [flagged, setFlagged] = useState<Record<number, boolean>>({});
     const [result, setResult] = useState<CheckResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [furthest, setFurthest] = useState(0);
     const [dir, setDir] = useState<"next" | "prev">("next");
+
+    // Нови инструменти: Палитра, Формули, Чернова, Таймер и Фокус
+    const [showPalette, setShowPalette] = useState(false);
+    const [showFormulas, setShowFormulas] = useState(false);
+    const [scratchpadActive, setScratchpadActive] = useState(false);
+    const [secondsLeft, setSecondsLeft] = useState(75 * 60);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [tabSwitches, setTabSwitches] = useState(0);
+
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const isDrawingRef = useRef(false);
     const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -265,17 +310,22 @@ export default function TestPage() {
             return;
         }
 
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/${examId}/`)
-            .then((res) => {
+        const loadExam = async () => {
+            try {
+                const res = isMistakesMode
+                    ? await apiFetch("/api/mistakes-exam/")
+                    : await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exams/${examId}/`);
                 if (!res.ok) throw new Error("not found");
-                return res.json();
-            })
-            .then((data) => {
+                const data: Exam = await res.json();
                 setExam(data);
+                setSecondsLeft((data.duration_minutes || 75) * 60);
                 setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, [examId, router]);
+            } catch {
+                setLoading(false);
+            }
+        };
+        loadExam();
+    }, [examId, isMistakesMode, router]);
 
     useEffect(() => {
         return () => {
@@ -283,15 +333,89 @@ export default function TestPage() {
         };
     }, []);
 
+    // Таймер за изпита
     useEffect(() => {
-        if (result) window.scrollTo({ top: 0, behavior: "smooth" });
+        if (loading || !exam || result) return;
+        const timer = setInterval(() => {
+            setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+            setElapsedSeconds((prev) => prev + 1);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [loading, exam, result]);
+
+    // Засичане на смяна на таба (Фокус режим)
+    useEffect(() => {
+        if (loading || !exam || result) return;
+        const handleVisibility = () => {
+            if (document.hidden) {
+                setTabSwitches((prev) => prev + 1);
+            }
+        };
+        document.addEventListener("visibilitychange", handleVisibility);
+        return () => document.removeEventListener("visibilitychange", handleVisibility);
+    }, [loading, exam, result]);
+
+    // Оразмеряване на Canvas за дигиталната чернова
+    useEffect(() => {
+        const resize = () => {
+            const c = canvasRef.current;
+            if (!c) return;
+            c.width = window.innerWidth;
+            c.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener("resize", resize);
+        return () => window.removeEventListener("resize", resize);
+    }, []);
+
+    useEffect(() => {
+        if (result) {
+            setScratchpadActive(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
     }, [result]);
+
+    function clearScratchpad() {
+        const c = canvasRef.current;
+        if (!c) return;
+        const ctx = c.getContext("2d");
+        ctx?.clearRect(0, 0, c.width, c.height);
+    }
+
+    function startDrawing(x: number, y: number) {
+        if (!scratchpadActive) return;
+        const ctx = canvasRef.current?.getContext("2d");
+        if (!ctx) return;
+        isDrawingRef.current = true;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+
+    function moveDrawing(x: number, y: number) {
+        if (!scratchpadActive || !isDrawingRef.current) return;
+        const ctx = canvasRef.current?.getContext("2d");
+        if (!ctx) return;
+        ctx.lineWidth = 2.8;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#2B50E6";
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    }
+
+    function stopDrawing() {
+        isDrawingRef.current = false;
+    }
 
     async function submitAnswers() {
         setSubmitting(true);
-        const res = await apiFetch(`/api/exams/${examId}/check/`, {
+        const endpoint = isMistakesMode ? "/api/mistakes-exam/" : `/api/exams/${examId}/check/`;
+        const res = await apiFetch(endpoint, {
             method: "POST",
-            body: JSON.stringify({ answers }),
+            body: JSON.stringify({
+                answers,
+                duration_seconds: elapsedSeconds,
+                tab_switches: tabSwitches,
+            }),
         });
         if (!res.ok) {
             setSubmitting(false);
@@ -314,13 +438,16 @@ export default function TestPage() {
         const isLast = currentIndex === exam.questions.length - 1;
         if (currentIndex === furthest && !isLast) {
             if (advanceTimer.current) clearTimeout(advanceTimer.current);
-            // малко изчакване, за да се види как се чертае кръгчето
             advanceTimer.current = setTimeout(() => {
                 setDir("next");
                 setCurrentIndex((i) => i + 1);
                 setFurthest((f) => f + 1);
             }, 650);
         }
+    }
+
+    function toggleFlag(questionId: number) {
+        setFlagged((prev) => ({ ...prev, [questionId]: !prev[questionId] }));
     }
 
     function goBack() {
@@ -340,22 +467,28 @@ export default function TestPage() {
     }
 
     function jumpTo(i: number) {
-        if (i > furthest) return;
         if (advanceTimer.current) clearTimeout(advanceTimer.current);
         setDir(i >= currentIndex ? "next" : "prev");
         setCurrentIndex(i);
+        setFurthest((f) => Math.max(f, i));
+        setShowPalette(false);
     }
 
     function retry() {
         setResult(null);
         setAnswers({});
+        setFlagged({});
         setCurrentIndex(0);
         setFurthest(0);
+        setElapsedSeconds(0);
+        setTabSwitches(0);
+        setSecondsLeft((exam?.duration_minutes || 75) * 60);
         setDir("next");
+        clearScratchpad();
         window.scrollTo({ top: 0 });
     }
 
-    // Клавиатура: 1–4 избират отговор, стрелките сменят въпроса
+    // Клавиатура: 1–4 избират отговор, F маркира с флагче, стрелките сменят въпроса
     useEffect(() => {
         if (!exam || result) return;
         const onKey = (e: KeyboardEvent) => {
@@ -368,6 +501,7 @@ export default function TestPage() {
             if (byKey[e.key]) selectAnswer(q.id, byKey[e.key]);
             else if (e.key === "ArrowLeft") goBack();
             else if (e.key === "ArrowRight") goNext();
+            else if (e.key.toLowerCase() === "f" || e.key.toLowerCase() === "ф") toggleFlag(q.id);
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
@@ -389,6 +523,8 @@ export default function TestPage() {
         );
     }
 
+    const gradeBadge = exam.exam_label || (exam.grade === 12 ? "ДЗИ (Матура)" : `НВО — ${exam.grade}. клас`);
+
     // --- РЕЗУЛТАТ ---
     if (result) {
         const wrongQuestions = exam.questions
@@ -402,16 +538,37 @@ export default function TestPage() {
 
                 <header className="mx-auto flex max-w-3xl items-center justify-between px-5 py-5 sm:py-6">
                     <Logo />
+                    <Link href="/profile" className="btn btn-sm btn-white">
+                        Към профила
+                    </Link>
                 </header>
 
                 <main className="mx-auto max-w-3xl px-5 pb-24 pt-2">
                     <div className="sheet mb-8 flex flex-col items-center gap-6 p-7 sm:flex-row sm:gap-10 sm:p-9">
                         <ScoreRing score={result.score} total={result.total} pct={pct} />
-                        <div className="text-center sm:text-left">
+                        <div className="flex-1 text-center sm:text-left">
                             <p className="pop font-hand text-5xl font-bold leading-none text-cobalt-deep" style={{ "--delay": "0.9s" } as CSSProperties}>
                                 {verdict(pct)}
                             </p>
                             <p className="mt-3 font-display text-lg font-semibold">{exam.title}</p>
+
+                            {/* Приравнена оценка по скалата на МОН и точки */}
+                            <div className="mt-4 flex flex-wrap justify-center gap-2.5 sm:justify-start">
+                                {result.mon_grade && (
+                                    <span className="rounded-xl border-2 border-ink bg-[#FFF4BF] px-3.5 py-1.5 font-display text-sm font-extrabold">
+                                        Оценка по МОН: {result.mon_grade.toFixed(2)}
+                                    </span>
+                                )}
+                                {result.max_points !== undefined && (
+                                    <span className="rounded-xl border-2 border-ink bg-[#E4EAFF] px-3.5 py-1.5 font-display text-sm font-bold">
+                                        Точки: {result.earned_points} / {result.max_points} т.
+                                    </span>
+                                )}
+                                <span className="rounded-xl border-2 border-ink bg-white px-3.5 py-1.5 font-display text-sm font-semibold text-ink-soft">
+                                    Време: {formatTime(elapsedSeconds)}
+                                </span>
+                            </div>
+
                             <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
                                 <button onClick={retry} className="btn">
                                     Опитай пак
@@ -443,6 +600,7 @@ export default function TestPage() {
                                     ];
                                     const yourAnswer = answers[String(q.id)];
                                     const correct = result.correct_answers[String(q.id)];
+                                    const explanation = result.explanations?.[String(q.id)];
                                     const base = 0.3 + Math.min(idx, 6) * 0.12;
 
                                     return (
@@ -451,7 +609,14 @@ export default function TestPage() {
                                             className="sheet drop-in p-5 sm:p-7"
                                             style={{ "--i": Math.min(idx, 6), "--r": "-1.5deg" } as CSSProperties}
                                         >
-                                            <p className="mb-2 font-display text-sm font-semibold text-ink-soft">Въпрос {n}</p>
+                                            <div className="mb-2 flex items-center justify-between gap-2">
+                                                <p className="font-display text-sm font-semibold text-ink-soft">Въпрос {n}</p>
+                                                {q.topic && (
+                                                    <span className="rounded-full border border-ink/30 bg-paper px-3 py-0.5 font-display text-xs font-semibold">
+                                                        {q.topic}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="mb-5 text-lg font-semibold leading-snug">{renderTextWithMath(q.text)}</p>
                                             {q.image && (
                                                 <div className="mb-5 flex justify-center">
@@ -486,6 +651,18 @@ export default function TestPage() {
                                             <p className="mt-4 font-hand text-[1.7rem] font-semibold leading-none text-pen">
                                                 Верният отговор е {optionLetter[correct] ?? correct}
                                             </p>
+
+                                            {/* Обяснение стъпка по стъпка */}
+                                            {explanation && (
+                                                <div className="mt-4 rounded-2xl border-2 border-ink bg-[#D8F5E8] p-4">
+                                                    <p className="mb-1 font-display text-xs font-extrabold uppercase tracking-wider text-ink">
+                                                        Решение стъпка по стъпка:
+                                                    </p>
+                                                    <div className="text-sm leading-relaxed text-ink">
+                                                        {renderTextWithMath(explanation)}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </li>
                                     );
                                 })}
@@ -501,10 +678,14 @@ export default function TestPage() {
         return (
             <main className="grid min-h-screen place-items-center px-5">
                 <div className="sheet max-w-md border-dashed p-10 text-center">
-                    <p className="mb-2 font-display text-xl font-bold">Този тест още няма въпроси</p>
-                    <p className="mb-7 text-ink-soft">Опитай друг тест, докато добавим въпросите.</p>
-                    <Link href={`/klas/${exam.grade}`} className="btn">
-                        Към другите тестове
+                    <p className="mb-2 font-display text-xl font-bold">Няма налични въпроси</p>
+                    <p className="mb-7 text-ink-soft">
+                        {isMistakesMode
+                            ? "Нямаш сбъркани въпроси за поправяне! Реши още няколко теста."
+                            : "Опитай друг тест, докато добавим въпросите."}
+                    </p>
+                    <Link href={isMistakesMode ? "/profile" : `/klas/${exam.grade}`} className="btn">
+                        Назад
                     </Link>
                 </div>
             </main>
@@ -521,26 +702,138 @@ export default function TestPage() {
     ];
     const isLast = currentIndex === exam.questions.length - 1;
     const selected = answers[String(q.id)];
+    const isFlagged = Boolean(flagged[q.id]);
     const allAnswered = exam.questions.every((qq) => answers[String(qq.id)]);
     const canNext = currentIndex < furthest || Boolean(selected);
+    const formulas = FORMULAS_BY_GRADE[exam.grade] || FORMULAS_BY_GRADE[10];
 
     return (
         <>
-            <header className="mx-auto flex max-w-2xl items-center justify-between px-5 py-5 sm:py-6">
+            {/* Дигитална чернова (Scratchpad Canvas) */}
+            <canvas
+                ref={canvasRef}
+                onMouseDown={(e) => startDrawing(e.clientX, e.clientY)}
+                onMouseMove={(e) => moveDrawing(e.clientX, e.clientY)}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={(e) => {
+                    const t = e.touches[0];
+                    if (t) startDrawing(t.clientX, t.clientY);
+                }}
+                onTouchMove={(e) => {
+                    const t = e.touches[0];
+                    if (t) moveDrawing(t.clientX, t.clientY);
+                }}
+                onTouchEnd={stopDrawing}
+                className={`fixed inset-0 z-20 ${scratchpadActive ? "cursor-crosshair pointer-events-auto" : "pointer-events-none"}`}
+            />
+
+            <header className="relative z-30 mx-auto flex max-w-2xl items-center justify-between px-5 py-5 sm:py-6">
                 <Logo />
-                <Link href={`/klas/${exam.grade}`} className="marker-line font-display text-sm font-medium text-ink-soft hover:text-ink">
-                    Изход от теста
-                </Link>
+                <div className="flex items-center gap-3">
+                    <span
+                        className={`rounded-full border-2 border-ink px-3 py-1 font-display text-xs font-extrabold ${
+                            secondsLeft < 300 ? "bg-pen text-white" : "bg-[#FFF4BF]"
+                        }`}
+                        title="Оставащо време"
+                    >
+                        ⏱ {formatTime(secondsLeft)}
+                    </span>
+                    <Link href={`/klas/${exam.grade}`} className="marker-line font-display text-sm font-medium text-ink-soft hover:text-ink">
+                        Изход от теста
+                    </Link>
+                </div>
             </header>
 
-            <main className="mx-auto max-w-2xl px-5 pb-20 pt-2">
+            <main className="relative z-30 mx-auto max-w-2xl px-5 pb-20 pt-2">
                 <div className="mb-2 flex items-baseline justify-between gap-4">
                     <h1 className="font-display text-lg font-bold leading-snug sm:text-xl">{exam.title}</h1>
-                    <span className="shrink-0 font-display text-sm font-semibold text-ink-soft">{exam.grade}. клас</span>
+                    <span className="shrink-0 rounded-full border-2 border-ink bg-white px-3 py-0.5 font-display text-xs font-bold">
+                        {gradeBadge}
+                    </span>
                 </div>
 
-                {/* Прогрес: всеки сегмент се запълва като с маркер */}
-                <div className="mb-3 mt-4 flex items-center gap-1.5" role="list" aria-label="Въпроси">
+                {/* Инструменти на ученика: Всички въпроси, Флагче, Формули, Чернова */}
+                <div className="my-3 flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setShowPalette((v) => !v)}
+                        className="rounded-xl border-2 border-ink bg-white px-3 py-1.5 font-display text-xs font-bold shadow-pop-sm transition hover:-translate-y-0.5"
+                    >
+                        🔢 Въпроси ({Object.keys(answers).length}/{exam.questions.length})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => toggleFlag(q.id)}
+                        className={`rounded-xl border-2 border-ink px-3 py-1.5 font-display text-xs font-bold transition ${
+                            isFlagged ? "bg-[#FFF4BF] shadow-pop-sm" : "bg-white"
+                        }`}
+                        title="Клавиш F"
+                    >
+                        🚩 {isFlagged ? "Маркиран" : "За преглед (F)"}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShowFormulas(true)}
+                        className="rounded-xl border-2 border-ink bg-white px-3 py-1.5 font-display text-xs font-bold transition hover:-translate-y-0.5"
+                    >
+                        📐 Формули
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setScratchpadActive((v) => !v)}
+                        className={`rounded-xl border-2 border-ink px-3 py-1.5 font-display text-xs font-bold transition ${
+                            scratchpadActive ? "bg-cobalt text-white shadow-pop-sm" : "bg-white"
+                        }`}
+                    >
+                        ✏️ {scratchpadActive ? "Чернова: ВКЛ" : "Чернова"}
+                    </button>
+                    {scratchpadActive && (
+                        <button
+                            type="button"
+                            onClick={clearScratchpad}
+                            className="rounded-xl border-2 border-ink bg-pen-tint px-3 py-1.5 font-display text-xs font-bold text-pen"
+                        >
+                            Изчисти
+                        </button>
+                    )}
+                </div>
+
+                {/* Падаща палитра с всички въпроси */}
+                {showPalette && (
+                    <div className="sheet mb-4 p-4">
+                        <p className="mb-2.5 font-display text-xs font-bold text-ink-soft">
+                            Избери въпрос за директен преход:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {exam.questions.map((qq, idx) => {
+                                const ans = Boolean(answers[String(qq.id)]);
+                                const flg = Boolean(flagged[qq.id]);
+                                const cur = idx === currentIndex;
+                                return (
+                                    <button
+                                        key={qq.id}
+                                        type="button"
+                                        onClick={() => jumpTo(idx)}
+                                        className={`relative h-9 w-9 rounded-xl border-2 border-ink font-display text-xs font-extrabold transition ${
+                                            cur
+                                                ? "bg-marker shadow-pop-sm -translate-y-0.5"
+                                                : ans
+                                                ? "bg-[#D8F5E8]"
+                                                : "bg-white"
+                                        }`}
+                                    >
+                                        {idx + 1}
+                                        {flg && <span className="absolute -right-1.5 -top-2 text-xs">🚩</span>}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Прогрес бар */}
+                <div className="mb-3 mt-3 flex items-center gap-1.5" role="list" aria-label="Въпроси">
                     {exam.questions.map((qq, i) => {
                         const visited = i <= furthest;
                         const answered = Boolean(answers[String(qq.id)]);
@@ -549,7 +842,6 @@ export default function TestPage() {
                                 key={qq.id}
                                 role="listitem"
                                 onClick={() => jumpTo(i)}
-                                disabled={!visited}
                                 aria-label={`Въпрос ${i + 1}${answered ? ", отговорен" : ""}`}
                                 aria-current={i === currentIndex ? "step" : undefined}
                                 className={`relative h-3.5 flex-1 overflow-hidden rounded-full border-2 bg-white transition-all duration-300 ease-spring ${
@@ -565,9 +857,17 @@ export default function TestPage() {
                         );
                     })}
                 </div>
-                <p className="mb-6 font-display text-sm font-medium text-ink-soft">
-                    Въпрос {currentIndex + 1} от {exam.questions.length}
-                </p>
+
+                <div className="mb-6 flex items-center justify-between">
+                    <p className="font-display text-sm font-medium text-ink-soft">
+                        Въпрос {currentIndex + 1} от {exam.questions.length}
+                    </p>
+                    {q.topic && (
+                        <span className="font-display text-xs font-semibold text-ink-soft">
+                            Тема: {q.topic} ({q.points || 1} т.)
+                        </span>
+                    )}
+                </div>
 
                 <div key={q.id} className={`sheet p-5 sm:p-8 ${dir === "next" ? "turn-next" : "turn-prev"}`}>
                     <p className="mb-6 text-xl font-semibold leading-snug sm:text-[1.35rem]">{renderTextWithMath(q.text)}</p>
@@ -646,9 +946,45 @@ export default function TestPage() {
                     </p>
                 )}
                 <p className="mt-10 hidden font-display text-xs text-ink-soft sm:block">
-                    Съвет: натисни 1, 2, 3 или 4 за отговор и стрелките за смяна на въпроса.
+                    Съвет: натисни 1, 2, 3 или 4 за отговор, F за флагче и стрелките за смяна на въпроса.
                 </p>
             </main>
+
+            {/* Модален прозорец със Справочник формули на МОН */}
+            {showFormulas && (
+                <div
+                    className="fixed inset-0 z-50 grid place-items-center bg-ink/50 px-4"
+                    onClick={() => setShowFormulas(false)}
+                >
+                    <div
+                        className="sheet max-w-lg w-full p-6 sm:p-8"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="font-display text-xl font-extrabold">
+                                📐 Справочник с формули ({exam.grade}. клас)
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowFormulas(false)}
+                                className="rounded-full border-2 border-ink px-3 py-1 font-display text-xs font-extrabold"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <ul className="space-y-3">
+                            {formulas.map((f) => (
+                                <li key={f.title} className="rounded-xl border-2 border-ink/20 bg-paper p-3">
+                                    <p className="mb-1 font-display text-xs font-bold text-ink-soft">{f.title}</p>
+                                    <div className="text-base font-semibold">
+                                        <InlineMath math={f.math} />
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

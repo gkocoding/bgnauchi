@@ -2,6 +2,7 @@ import Link from "next/link";
 import Nav from "@/components/Nav";
 import GradeMap from "@/components/GradeMap";
 import Steps from "@/components/Steps";
+import DailyChallenge from "@/components/DailyChallenge";
 
 export default function Home() {
     return (
@@ -18,8 +19,8 @@ export default function Home() {
                     </h1>
                     <div>
                         <p className="max-w-md text-lg leading-relaxed text-ink-soft">
-                            Тестове за 4., 7., 10. и 12. клас във формата на истинските изпити. Резултатът излиза веднага,
-                            а при грешка виждаш верния отговор.
+                            Тестове за 4., 7., 10. (НВО) и 12. клас (ДЗИ) във формата на истинските изпити. Резултатът излиза веднага,
+                            с оценка по скалата на МОН и решения стъпка по стъпка.
                         </p>
                         <div className="mt-6 flex items-end gap-3 font-hand text-[1.6rem] font-semibold leading-none text-cobalt-deep">
                             <span>Избери своя клас</span>
@@ -30,9 +31,12 @@ export default function Home() {
                     </div>
                 </section>
 
-                <section className="mx-auto max-w-6xl px-5 pb-20 sm:pb-28">
+                <section id="klas-map" className="mx-auto max-w-6xl scroll-mt-8 px-5 pb-16 sm:pb-24">
                     <GradeMap />
                 </section>
+
+                {/* ЗАДАЧА НА ДЕНЯ */}
+                <DailyChallenge />
 
                 {/* КАК РАБОТИ — това наистина е последователност, затова е номерирано */}
                 <section className="border-y-2 border-ink bg-white">
@@ -52,14 +56,19 @@ export default function Home() {
                                 Първият тест е безплатен и отнема минути
                             </h2>
                             <p className="mb-8 text-lg text-ink-soft">
-                                Избери своя клас от пътя и започни. Профилът ти пази всеки резултат.
+                                Избери своя клас от пътя по-горе и започни. Профилът ти пази всеки резултат и анализира слабите ти теми.
                             </p>
-                            <Link href="#klas-map" className="btn">
-                                Избери клас
-                                <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
-                                    <path d="M10 3v13M4 11l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </Link>
+                            <div className="flex flex-wrap gap-3">
+                                <Link href="#klas-map" className="btn">
+                                    Избери клас
+                                    <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
+                                        <path d="M10 17V4M4 9l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </Link>
+                                <Link href="/duel" className="btn btn-white">
+                                    ⚔️ Предизвикай приятел
+                                </Link>
+                            </div>
                         </div>
                         <svg
                             viewBox="0 0 200 200"
@@ -74,7 +83,7 @@ export default function Home() {
             </main>
 
             <footer className="mx-auto max-w-6xl px-5 pb-10 font-display text-sm text-ink-soft">
-                bgnauchi.me — подготовка за матури и национални изпити
+                bgnauchi.me — подготовка за матури (ДЗИ) и национални външни оценявания (НВО)
             </footer>
         </>
     );
