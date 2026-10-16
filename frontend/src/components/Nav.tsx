@@ -1,35 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { logout, isLoggedIn } from "@/lib/auth";
 import { useAuthName, notifyAuthChange } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
 
-export function Logo({ showText = false }: { showText?: boolean }) {
+const PAGE_TITLES: Record<string, string> = {
+    "/": "БГнаучи | Начало",
+    "/profile": "БГнаучи | Профил",
+    "/homework": "БГнаучи | Домашна работа",
+    "/duel": "БГнаучи | 1v1 Дуел",
+    "/leaderboard": "БГнаучи | Класация",
+    "/calculator": "БГнаучи | Калкулатор Бал",
+    "/teacher": "БГнаучи | Учителско табло",
+    "/login": "БГнаучи | Вход",
+    "/register": "БГнаучи | Регистрация",
+};
+
+export function Logo() {
     return (
         <Link
             href="/"
-            aria-label="bgнаучи — начало"
-            className="group inline-flex items-center gap-2.5 select-none focus:outline-none"
+            aria-label="БГнаучи — Начало"
+            className="group inline-flex shrink-0 items-center gap-2.5 select-none focus:outline-none"
         >
-            <div className="relative -my-4 flex h-16 w-auto shrink-0 items-center overflow-visible transition-transform duration-200 group-hover:scale-[1.03]">
-                <Image
-                    src="/logo.svg"
-                    alt="bgнаучи лого"
-                    width={220}
-                    height={140}
-                    priority
-                    className="h-16 w-auto max-w-none object-contain scale-[1.65] origin-left"
-                />
-            </div>
-            {showText && (
-                <span className="font-display text-lg font-extrabold tracking-tight text-slate-950">
-                    научи<span className="text-blue-600">.me</span>
-                </span>
-            )}
+            <img
+                src="/logo.svg"
+                alt="БГнаучи"
+                className="h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.03]"
+            />
         </Link>
     );
 }
@@ -44,6 +45,18 @@ export default function Nav() {
 
     useEffect(() => {
         setMobileOpen(false);
+        if (!pathname) return;
+
+        if (PAGE_TITLES[pathname]) {
+            document.title = PAGE_TITLES[pathname];
+        } else if (pathname.startsWith("/klas/")) {
+            const grade = pathname.split("/")[2];
+            document.title = `БГнаучи | ${grade}. клас`;
+        } else if (pathname.startsWith("/test/")) {
+            document.title = "БГнаучи | Изпитен тест";
+        } else {
+            document.title = "БГнаучи";
+        }
     }, [pathname]);
 
     useEffect(() => {
@@ -111,17 +124,16 @@ export default function Nav() {
 
     return (
         <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
-            <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-5 sm:py-3.5">
                 <Logo />
 
-                {/* ДЕСКТОП НАВИГАЦИЯ (само за логнати потребители) */}
                 {loggedIn && (
                     <nav
                         className="hidden items-center gap-1 rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 lg:flex"
                         aria-label="Основна навигация"
                     >
-                        {desktopLink("/profile", "Моят напредък")}
-                        {desktopLink("/homework", "Домашно")}
+                        {desktopLink("/profile", "Профил")}
+                        {desktopLink("/homework", "Домашна работа")}
                         {desktopLink("/duel", "1v1 Дуел")}
                         {desktopLink("/leaderboard", "Класация")}
                         {desktopLink("/calculator", "Калкулатор Бал")}
@@ -141,7 +153,6 @@ export default function Nav() {
                     </nav>
                 )}
 
-                {/* ДЯСНА ЗОНА (Десктоп + Мобилен бутон) */}
                 <div className="flex items-center gap-2">
                     {loggedIn ? (
                         <>
@@ -162,12 +173,10 @@ export default function Nav() {
                                 Изход
                             </button>
 
-                            {/* Hamburger бутон за мобилни и таблети */}
                             <button
                                 type="button"
                                 onClick={() => setMobileOpen((v) => !v)}
                                 aria-label="Отвори менюто"
-                                aria-expanded={mobileOpen}
                                 className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-900 lg:hidden"
                             >
                                 {mobileOpen ? (
@@ -197,7 +206,6 @@ export default function Nav() {
                 </div>
             </div>
 
-            {/* МОБИЛНО ПАДАЩО МЕНЮ */}
             {loggedIn && mobileOpen && (
                 <div className="border-t border-slate-200 bg-white px-4 pb-5 pt-3 shadow-xl lg:hidden">
                     <div className="mb-3 flex items-center justify-between rounded-xl bg-slate-100 px-3.5 py-2.5">
@@ -217,11 +225,11 @@ export default function Nav() {
                     </div>
 
                     <div className="grid gap-2">
-                        {mobileLink("/profile", "Моят напредък")}
+                        {mobileLink("/profile", "Профил")}
                         {mobileLink("/homework", "Домашна работа")}
-                        {mobileLink("/duel", "1v1 Дуел с приятел")}
-                        {mobileLink("/leaderboard", "Национална класация")}
-                        {mobileLink("/calculator", "Калкулатор на бал")}
+                        {mobileLink("/duel", "1v1 Дуел")}
+                        {mobileLink("/leaderboard", "Класация")}
+                        {mobileLink("/calculator", "Калкулатор Бал")}
                         {role === "teacher" && mobileLink("/teacher", "Учителско табло", "Учител")}
                     </div>
                 </div>

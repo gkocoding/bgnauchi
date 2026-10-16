@@ -13,13 +13,13 @@ export default function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [website, setWebsite] = useState(""); // honeypot - остава винаги празно за истински хора
+    const [website, setWebsite] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [errorCount, setErrorCount] = useState(0);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        document.title = "bgнаучи | Регистрация";
+        document.title = "БГнаучи | Регистрация";
     }, []);
 
     async function handleSubmit(e: React.FormEvent) {
@@ -49,11 +49,10 @@ export default function RegisterPage() {
     return (
         <AuthShell title="Започни с профил" pitch="Безплатно е. Профилът пази всеки решен тест, за да виждаш как се подобряваш.">
             <div className="sheet p-7 sm:p-9">
-                <h2 className="mb-1 font-display text-2xl font-extrabold">Регистрация</h2>
-                <p className="mb-7 text-ink-soft">Създай си профил, за да пазиш резултатите си</p>
+                <h2 className="mb-1 font-display text-2xl font-extrabold text-slate-950">Регистрация</h2>
+                <p className="mb-7 text-sm text-slate-500">Създай си профил, за да пазиш резултатите си</p>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Honeypot - невидимо поле за хора, капан за ботове */}
                     <div style={{ position: "absolute", left: "-9999px" }} aria-hidden="true">
                         <label htmlFor="website">Website</label>
                         <input
@@ -68,7 +67,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label htmlFor="username" className="mb-1.5 block font-display text-sm font-semibold">
+                        <label htmlFor="username" className="mb-1.5 block font-display text-xs font-bold uppercase tracking-wider text-slate-600">
                             Потребителско име
                         </label>
                         <input
@@ -83,7 +82,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label htmlFor="email" className="mb-1.5 block font-display text-sm font-semibold">
+                        <label htmlFor="email" className="mb-1.5 block font-display text-xs font-bold uppercase tracking-wider text-slate-600">
                             Имейл
                         </label>
                         <input
@@ -98,7 +97,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="mb-1.5 block font-display text-sm font-semibold">
+                        <label htmlFor="password" className="mb-1.5 block font-display text-xs font-bold uppercase tracking-wider text-slate-600">
                             Парола
                         </label>
                         <div className="relative">
@@ -106,17 +105,28 @@ export default function RegisterPage() {
                                 id="password"
                                 type={showPassword ? "text" : "password"}
                                 required
-                                autoComplete="new-password"
+                                autoComplete="off"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="field !pr-24"
+                                className="field !pr-12"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((s) => !s)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 font-display text-sm font-semibold text-ink-soft hover:text-ink bg-transparent border-none cursor-pointer"
+                                aria-label={showPassword ? "Скрий паролата" : "Покажи паролата"}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
                             >
-                                {showPassword ? "Скрий" : "Покажи"}
+                                {showPassword ? (
+                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" strokeLinecap="round" strokeLinejoin="round" />
+                                        <line x1="1" y1="1" x2="23" y2="23" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                ) : (
+                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeLinecap="round" strokeLinejoin="round" />
+                                        <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -125,7 +135,7 @@ export default function RegisterPage() {
                         <p
                             key={errorCount}
                             role="alert"
-                            className="shake rounded-xl border-2 border-pen bg-pen-tint px-4 py-3 font-display text-sm font-semibold text-pen"
+                            className="shake rounded-xl border border-red-300 bg-red-50 px-4 py-3 font-display text-sm font-semibold text-red-700"
                         >
                             {error}
                         </p>
@@ -136,9 +146,9 @@ export default function RegisterPage() {
                     </button>
                 </form>
 
-                <p className="mt-7 text-center text-ink-soft">
+                <p className="mt-7 text-center text-sm text-slate-600">
                     Вече имаш профил?{" "}
-                    <Link href="/login" className="marker-line font-display font-bold text-cobalt-deep">
+                    <Link href="/login" className="font-display font-bold text-blue-600 hover:underline">
                         Влез оттук
                     </Link>
                 </p>

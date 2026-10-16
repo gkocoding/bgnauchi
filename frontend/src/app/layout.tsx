@@ -1,20 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-export const metadata = {
+export const metadata: Metadata = {
     title: {
-        default: "bgнаучи | Начало",
-        template: "bgнаучи | %s",
+        default: "БГнаучи | Начало",
+        template: "БГнаучи | %s",
     },
     description:
         "Интерактивна платформа за подготовка за НВО (4., 7., 10. клас) и ДЗИ (12. клас) по БЕЛ и Математика.",
     icons: {
         icon: [
             { url: "/favicon.svg", type: "image/svg+xml" },
+            { url: "/logo.svg", type: "image/svg+xml" },
         ],
-        shortcut: ["/icon.svg"],
+        shortcut: ["/favicon.svg"],
         apple: [
-            { url: "/icon.svg", sizes: "180x180", type: "image/svg+xml" },
+            { url: "/favicon.svg", sizes: "180x180", type: "image/svg+xml" },
         ],
     },
 };
